@@ -3,118 +3,267 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="AK Pack Fitness — Attendance History"/>
   <title>AK Pack Fitness — Attendance History</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 
-  <!-- ─── HEADER ─── -->
-  <header class="site-header">
-    <div class="header-logo"><span>AK</span> PACK FITNESS</div>
-    <div class="header-subtitle">Attendance History</div>
-    <nav class="header-nav">
-      <a href="index.html">CHECK IN</a>
-      <a href="admin.html">ADMIN MONITOR</a>
-      <a href="history.html" class="active">HISTORY</a>
-    </nav>
-  </header>
+  <!-- ─── SIDEBAR ─── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-text"><span>AK</span> PACK</div>
+      <div class="sidebar-logo-sub">FITNESS SYSTEM</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Menu</div>
+      <ul class="sidebar-nav">
+        <li><a href="index.html"><span class="nav-icon">🏋️</span> Check In Terminal</a></li>
+        <li><a href="admin.html"><span class="nav-icon">📊</span> Attendance Monitor</a></li>
+        <li><a href="history.html" class="active"><span class="nav-icon">📋</span> History</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-footer">
+      <button class="sidebar-footer-btn" onclick="showConfigOverlay()">
+        <span>⚙️</span> Settings
+      </button>
+    </div>
+  </aside>
 
   <!-- ─── MAIN ─── -->
-  <main class="page-content">
-    <div class="container-wide">
+  <div class="main-wrapper">
 
-      <!-- PAGE HEADER -->
-      <div class="flex-between mb-24">
-        <div>
-          <div class="section-title">ATTENDANCE HISTORY</div>
-          <div class="section-divider"></div>
-          <p style="font-family:var(--font-body);font-size:0.9rem;color:var(--white-dim)">
-            Total records: <strong id="historyTotal" style="color:var(--white)">—</strong>
-          </p>
-        </div>
-        <button class="btn btn-secondary" style="padding:10px 20px;font-size:0.82rem;letter-spacing:2px" onclick="loadHistory()">
-          ↻ RELOAD
-        </button>
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="topbar-title">Attendance History</div>
+      <div class="topbar-right">
+        <span id="totalBadge" class="topbar-badge">0 Records</span>
+        <button class="btn btn-secondary" style="padding:7px 14px;font-size:0.78rem" onclick="loadHistory()">↻ Reload</button>
       </div>
+    </div>
 
-      <!-- SEARCH / FILTER BAR -->
+    <!-- PAGE CONTENT -->
+    <main class="page-content">
+
+      <!-- SEARCH / FILTER -->
       <div class="card mb-24">
-        <div style="font-family:var(--font-heading);font-size:0.78rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--white-dim);margin-bottom:14px">
-          🔍 FILTER RECORDS
+        <div style="font-size:0.72rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-3);margin-bottom:12px">
+          🔍 Search & Filter
         </div>
         <div class="search-bar">
-          <input
-            type="date"
-            id="filterDate"
-            title="Filter by date"
-            style="max-width:200px"
-          />
-          <input
-            type="text"
-            id="filterID"
-            placeholder="Search Member ID..."
-            autocomplete="off"
-            style="max-width:220px"
-          />
-          <input
-            type="text"
-            id="filterName"
-            placeholder="Search Name..."
-            autocomplete="off"
-          />
-          <button class="btn btn-secondary" style="padding:10px 20px;font-size:0.8rem;letter-spacing:2px;flex:0 0 auto" onclick="
-            document.getElementById('filterDate').value='';
-            document.getElementById('filterID').value='';
-            document.getElementById('filterName').value='';
-            filterHistory();
-          ">CLEAR</button>
+          <input type="date"   id="filterDate"  class="search-input" style="max-width:180px" title="Filter by date"/>
+          <input type="text"   id="filterID"    class="search-input" placeholder="Search Member ID..." autocomplete="off"/>
+          <input type="text"   id="filterName"  class="search-input" placeholder="Search Name..." autocomplete="off"/>
+          <select              id="filterStatus" class="search-input" style="max-width:160px">
+            <option value="">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="EXIT">Exit</option>
+            <option value="Expired">Expired</option>
+            <option value="Warning">Warning</option>
+          </select>
+          <button class="btn btn-ghost" style="padding:9px 16px;font-size:0.82rem" onclick="clearFilters()">Clear</button>
         </div>
       </div>
 
-      <!-- HISTORY TABLE -->
+      <!-- HISTORY CARDS GRID -->
       <div class="card">
-        <div style="overflow-x:auto">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Member ID</th>
-                <th>Name</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="historyTbody">
-              <tr>
-                <td colspan="5" style="text-align:center;padding:40px">
-                  <div class="spinner"></div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="flex-between mb-16">
+          <div>
+            <div class="section-title">All Records</div>
+            <div class="section-divider"></div>
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-3)">Click any card to view full details</div>
+        </div>
+
+        <div id="historyGrid" class="attendance-grid">
+          <div style="grid-column:1/-1;text-align:center;padding:40px">
+            <div class="spinner"></div>
+            <p style="font-size:0.82rem;color:var(--text-3);margin-top:8px">Loading history...</p>
+          </div>
         </div>
       </div>
 
-    </div>
-  </main>
+    </main>
 
-  <!-- ─── FOOTER ─── -->
-  <footer class="site-footer">
-    <p>AK PACK FITNESS &copy; <span id="fyear"></span> — <span>HISTORY</span></p>
-    <p style="margin-top:8px">
-      <button onclick="showConfigOverlay()" style="background:none;border:none;color:rgba(255,255,255,0.2);font-family:var(--font-heading);font-size:0.7rem;letter-spacing:3px;cursor:pointer;text-transform:uppercase">
-        ⚙ SETTINGS
-      </button>
-    </p>
-  </footer>
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <p>AK PACK FITNESS &copy; <span id="fyear"></span> — <span>HISTORY</span></p>
+    </footer>
+  </div>
+
+  <!-- ─── MEMBER DETAIL MODAL ─── -->
+  <div id="memberModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">Record Details</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
   <script>
     document.getElementById('fyear').textContent = new Date().getFullYear();
+
+    let allHistoryRows = [];
+
+    const PASTELS = [
+      { bg:'#dbeafe', border:'#bfdbfe', dot:'#3b82f6' },
+      { bg:'#d1fae5', border:'#a7f3d0', dot:'#22c55e' },
+      { bg:'#ffedd5', border:'#fed7aa', dot:'#f97316' },
+      { bg:'#ede9fe', border:'#ddd6fe', dot:'#8b5cf6' },
+      { bg:'#fce7f3', border:'#fbcfe8', dot:'#ec4899' },
+      { bg:'#ccfbf1', border:'#99f6e4', dot:'#14b8a6' },
+    ];
+
+    function getStatusPill(status) {
+      if (status === 'Active')  return `<span class="pill pill-active">Active</span>`;
+      if (status === 'EXIT')    return `<span class="pill pill-exit">Exit</span>`;
+      if (status === 'Expired') return `<span class="pill pill-expired">Expired</span>`;
+      return `<span class="pill pill-warning">${status}</span>`;
+    }
+
+    async function loadHistory() {
+      const grid = document.getElementById('historyGrid');
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px">
+        <div class="spinner"></div>
+        <p style="font-size:0.82rem;color:var(--text-3);margin-top:8px">Loading...</p>
+      </div>`;
+
+      try {
+        allHistoryRows = await readSheet('Attendance');
+        renderHistoryCards(allHistoryRows);
+      } catch(err) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--red)">
+          Error: ${err.message}</div>`;
+      }
+    }
+
+    function renderHistoryCards(rows) {
+      const grid = document.getElementById('historyGrid');
+      const badge = document.getElementById('totalBadge');
+      badge.textContent = `${rows.length} Record${rows.length !== 1 ? 's' : ''}`;
+
+      if (rows.length === 0) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px">
+          <div style="font-size:3rem;margin-bottom:12px">📋</div>
+          <div style="font-size:1rem;font-weight:600;color:var(--text-2)">No records found</div>
+          <div style="font-size:0.82rem;color:var(--text-3);margin-top:4px">Try adjusting your filters</div>
+        </div>`;
+        return;
+      }
+
+      // Show newest first
+      const sorted = rows.slice().reverse();
+
+      grid.innerHTML = sorted.map((r, i) => {
+        const p = PASTELS[i % PASTELS.length];
+        const name   = (r['Name']   || r['name']   || 'Unknown').toUpperCase();
+        const id     = r['MemberID']|| r['Member ID']|| '—';
+        const time   = r['Time']    || r['time']    || '—';
+        const date   = r['Date']    || r['date']    || '—';
+        const status = r['Status']  || r['status']  || '—';
+
+        const dataAttr = `data-name="${name}" data-id="${id}" data-time="${time}" data-date="${date}" data-status="${status}"`;
+
+        return `
+          <div class="att-card" style="background:${p.bg};border-color:${p.border}" onclick="openModal(this)" ${dataAttr}>
+            <div class="att-card-time">
+              <span style="width:7px;height:7px;background:${p.dot};border-radius:50%;display:inline-block;flex-shrink:0"></span>
+              ${time} · ${date}
+            </div>
+            <div class="att-card-name">${name}</div>
+            <div class="att-card-id">${id}</div>
+            <div class="att-card-footer">
+              ${getStatusPill(status)}
+              <span style="font-size:0.7rem;color:var(--text-3)">Tap for details →</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function filterHistory() {
+      const dateVal   = (document.getElementById('filterDate')?.value   || '').trim();
+      const idVal     = (document.getElementById('filterID')?.value     || '').trim().toUpperCase();
+      const nameVal   = (document.getElementById('filterName')?.value   || '').trim().toUpperCase();
+      const statusVal = (document.getElementById('filterStatus')?.value || '').trim();
+
+      let filtered = allHistoryRows;
+
+      if (dateVal) {
+        const parts = dateVal.split('-');
+        const fmt = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        filtered = filtered.filter(r => {
+          const d = r['Date'] || r['date'] || '';
+          return d.includes(fmt) || d.includes(dateVal);
+        });
+      }
+      if (idVal)     filtered = filtered.filter(r => (r['MemberID']||r['Member ID']||'').toUpperCase().includes(idVal));
+      if (nameVal)   filtered = filtered.filter(r => (r['Name']    ||r['name']    ||'').toUpperCase().includes(nameVal));
+      if (statusVal) filtered = filtered.filter(r => (r['Status']  ||r['status']  ||'') === statusVal);
+
+      renderHistoryCards(filtered);
+    }
+
+    function clearFilters() {
+      document.getElementById('filterDate').value   = '';
+      document.getElementById('filterID').value     = '';
+      document.getElementById('filterName').value   = '';
+      document.getElementById('filterStatus').value = '';
+      renderHistoryCards(allHistoryRows);
+    }
+
+    function openModal(card) {
+      const name   = card.dataset.name;
+      const id     = card.dataset.id;
+      const time   = card.dataset.time;
+      const date   = card.dataset.date;
+      const status = card.dataset.status;
+
+      document.getElementById('modalBody').innerHTML = `
+        <div class="modal-member-name">${name}</div>
+        <div class="modal-member-id">ID: ${id}</div>
+        <div class="modal-info-grid">
+          <div class="modal-info-item">
+            <div class="modal-info-label">Date</div>
+            <div class="modal-info-value">${date}</div>
+          </div>
+          <div class="modal-info-item">
+            <div class="modal-info-label">Time</div>
+            <div class="modal-info-value">${time}</div>
+          </div>
+          <div class="modal-info-item">
+            <div class="modal-info-label">Member ID</div>
+            <div class="modal-info-value" style="font-family:'Courier New',monospace;color:var(--red)">${id}</div>
+          </div>
+          <div class="modal-info-item">
+            <div class="modal-info-label">Status</div>
+            <div class="modal-info-value">${getStatusPill(status)}</div>
+          </div>
+        </div>
+      `;
+      document.getElementById('memberModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('memberModal').classList.add('hidden');
+    }
+
+    document.getElementById('memberModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    // Filter listeners
     document.addEventListener('DOMContentLoaded', () => {
       if (!requireConfig()) return;
       loadHistory();
+      ['filterDate','filterID','filterName','filterStatus'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', filterHistory);
+        document.getElementById(id)?.addEventListener('change', filterHistory);
+      });
     });
   </script>
 </body>

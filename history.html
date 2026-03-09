@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="AK Pack Fitness — Attendance History"/>
+  <title>AK Pack Fitness — Attendance History</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- ─── HEADER ─── -->
+  <header class="site-header">
+    <div class="header-logo"><span>AK</span> PACK FITNESS</div>
+    <div class="header-subtitle">Attendance History</div>
+    <nav class="header-nav">
+      <a href="index.html">CHECK IN</a>
+      <a href="admin.html">ADMIN MONITOR</a>
+      <a href="history.html" class="active">HISTORY</a>
+    </nav>
+  </header>
+
+  <!-- ─── MAIN ─── -->
+  <main class="page-content">
+    <div class="container-wide">
+
+      <!-- PAGE HEADER -->
+      <div class="flex-between mb-24">
+        <div>
+          <div class="section-title">ATTENDANCE HISTORY</div>
+          <div class="section-divider"></div>
+          <p style="font-family:var(--font-body);font-size:0.9rem;color:var(--white-dim)">
+            Total records: <strong id="historyTotal" style="color:var(--white)">—</strong>
+          </p>
+        </div>
+        <button class="btn btn-secondary" style="padding:10px 20px;font-size:0.82rem;letter-spacing:2px" onclick="loadHistory()">
+          ↻ RELOAD
+        </button>
+      </div>
+
+      <!-- SEARCH / FILTER BAR -->
+      <div class="card mb-24">
+        <div style="font-family:var(--font-heading);font-size:0.78rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--white-dim);margin-bottom:14px">
+          🔍 FILTER RECORDS
+        </div>
+        <div class="search-bar">
+          <input
+            type="date"
+            id="filterDate"
+            title="Filter by date"
+            style="max-width:200px"
+          />
+          <input
+            type="text"
+            id="filterID"
+            placeholder="Search Member ID..."
+            autocomplete="off"
+            style="max-width:220px"
+          />
+          <input
+            type="text"
+            id="filterName"
+            placeholder="Search Name..."
+            autocomplete="off"
+          />
+          <button class="btn btn-secondary" style="padding:10px 20px;font-size:0.8rem;letter-spacing:2px;flex:0 0 auto" onclick="
+            document.getElementById('filterDate').value='';
+            document.getElementById('filterID').value='';
+            document.getElementById('filterName').value='';
+            filterHistory();
+          ">CLEAR</button>
+        </div>
+      </div>
+
+      <!-- HISTORY TABLE -->
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Member ID</th>
+                <th>Name</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="historyTbody">
+              <tr>
+                <td colspan="5" style="text-align:center;padding:40px">
+                  <div class="spinner"></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ─── FOOTER ─── -->
+  <footer class="site-footer">
+    <p>AK PACK FITNESS &copy; <span id="fyear"></span> — <span>HISTORY</span></p>
+    <p style="margin-top:8px">
+      <button onclick="showConfigOverlay()" style="background:none;border:none;color:rgba(255,255,255,0.2);font-family:var(--font-heading);font-size:0.7rem;letter-spacing:3px;cursor:pointer;text-transform:uppercase">
+        ⚙ SETTINGS
+      </button>
+    </p>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    document.getElementById('fyear').textContent = new Date().getFullYear();
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!requireConfig()) return;
+      loadHistory();
+    });
+  </script>
+</body>
+</html>

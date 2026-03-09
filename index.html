@@ -3,135 +3,219 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="AK Pack Fitness — Attendance Terminal"/>
-  <title>AK Pack Fitness — Attendance Terminal</title>
+  <title>AK Pack Fitness — Check-In Terminal</title>
   <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* ─── Terminal-specific overrides for light theme ─── */
+    .terminal-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: calc(100vh - var(--topbar-height));
+      padding: 32px 20px 60px;
+    }
+    .terminal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      padding: 36px 40px;
+      width: 100%;
+      max-width: 540px;
+    }
+    .mode-toggle {
+      display: flex;
+      background: var(--bg-2);
+      border: 1.5px solid var(--border);
+      border-radius: 99px;
+      padding: 4px;
+      margin-bottom: 28px;
+      width: 100%;
+      max-width: 400px;
+      align-self: center;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 11px 20px;
+      border: none;
+      border-radius: 99px;
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: transparent;
+      color: var(--text-3);
+      letter-spacing: 0.5px;
+    }
+    .mode-btn.active {
+      background: var(--red);
+      color: #fff;
+      box-shadow: 0 2px 10px var(--red-glow);
+    }
+    .mode-btn.active-exit {
+      background: #3b82f6;
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(59,130,246,0.3);
+    }
+    .terminal-title {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      letter-spacing: 4px;
+      color: var(--text);
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .terminal-title span { color: var(--red); }
+    .terminal-sub {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text-3);
+      text-align: center;
+      margin-bottom: 28px;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- ─── HEADER ─── -->
-  <header class="site-header">
-    <div class="header-logo" id="logoTapTarget"><span>AK</span> PACK FITNESS</div>
-    <div class="header-subtitle">Attendance Terminal</div>
-  </header>
+  <!-- ─── SIDEBAR ─── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-text"><span>AK</span> PACK</div>
+      <div class="sidebar-logo-sub">FITNESS SYSTEM</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Menu</div>
+      <ul class="sidebar-nav">
+        <li><a href="index.html" class="active"><span class="nav-icon">🏋️</span> Check In Terminal</a></li>
+        <li id="adminMonitorLink" class="hidden"><a href="admin.html"><span class="nav-icon">📊</span> Attendance Monitor</a></li>
+        <li id="historyLink"      class="hidden"><a href="history.html"><span class="nav-icon">📋</span> History</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-footer">
+      <button class="sidebar-footer-btn" onclick="openAdminLogin()">
+        <span>🔒</span> Admin Access
+      </button>
+      <button class="sidebar-footer-btn" onclick="showConfigOverlay()" style="margin-top:2px">
+        <span>⚙️</span> Settings
+      </button>
+    </div>
+  </aside>
 
   <!-- ─── HIDDEN ADMIN LOGIN OVERLAY ─── -->
   <div id="adminLoginOverlay" class="config-overlay hidden">
-    <div class="config-box">
-      <div class="config-title">🔒 ADMIN ACCESS</div>
-      <p class="config-note">Enter the admin password to continue.</p>
+    <div class="config-box" style="max-width:400px">
+      <div class="config-title">🔒 Admin Access</div>
+      <p class="config-note">Enter the admin password to access monitor and history pages.</p>
       <input class="config-input" id="adminPasswordInput" type="password"
         placeholder="Enter password..."
         onkeydown="if(event.key==='Enter') checkAdminPassword()"/>
       <div id="adminLoginError" class="hidden"
-        style="color:var(--red-bright);font-family:var(--font-heading);font-size:0.85rem;letter-spacing:2px;margin-bottom:12px">
-        ✖ INCORRECT PASSWORD
+        style="color:var(--red);font-size:0.82rem;font-weight:600;margin-bottom:10px">
+        ✖ Incorrect password. Try again.
       </div>
       <div style="display:flex;gap:10px;margin-top:16px">
-        <button class="btn btn-primary" style="flex:1" onclick="checkAdminPassword()">ENTER</button>
-        <button class="btn btn-secondary" onclick="closeAdminLogin()">CANCEL</button>
+        <button class="btn btn-primary" style="flex:1" onclick="checkAdminPassword()">Enter</button>
+        <button class="btn btn-secondary" onclick="closeAdminLogin()">Cancel</button>
       </div>
     </div>
   </div>
 
   <!-- ─── MAIN ─── -->
-  <main class="page-content">
-    <div class="container">
+  <div class="main-wrapper">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">Check In Terminal</div>
+      <div class="topbar-right">
+        <span id="currentTimeDisplay" style="font-size:0.82rem;color:var(--text-3)"></span>
+      </div>
+    </div>
+
+    <!-- PAGE CONTENT -->
+    <main class="page-content" style="display:flex;flex-direction:column;align-items:center">
 
       <!-- MODE TOGGLE -->
-      <div style="display:flex;justify-content:center;margin-bottom:24px">
-        <button id="modeCheckInBtn" onclick="setMode('checkin')"
-          style="font-family:var(--font-heading);font-size:1rem;font-weight:700;letter-spacing:4px;
-                 text-transform:uppercase;padding:14px 40px;
-                 border:2px solid var(--red);border-right:1px solid var(--red);
-                 background:var(--red);color:var(--white);
-                 cursor:pointer;border-radius:2px 0 0 2px;transition:all 0.2s">
-          🏋️ CHECK IN
+      <div class="mode-toggle">
+        <button id="modeCheckInBtn" class="mode-btn active" onclick="setMode('checkin')">
+          🏋️ Check In
         </button>
-        <button id="modeExitBtn" onclick="setMode('exit')"
-          style="font-family:var(--font-heading);font-size:1rem;font-weight:700;letter-spacing:4px;
-                 text-transform:uppercase;padding:14px 40px;
-                 border:2px solid var(--red);border-left:1px solid var(--red);
-                 background:transparent;color:var(--white-dim);
-                 cursor:pointer;border-radius:0 2px 2px 0;transition:all 0.2s">
-          🚪 EXIT
+        <button id="modeExitBtn" class="mode-btn" onclick="setMode('exit')">
+          🚪 Exit
         </button>
       </div>
 
       <!-- INPUT CARD -->
-      <div class="card" style="max-width:560px;margin:0 auto">
-        <div class="section-title text-center" id="cardTitle">CHECK IN</div>
-        <div class="section-divider" style="margin:6px auto 24px"></div>
+      <div class="terminal-card">
+        <div class="terminal-title" id="cardTitle"><span>CHECK</span> IN</div>
+        <div class="terminal-sub" id="cardSub">Enter Member ID to Check In</div>
 
         <div class="form-group">
-          <label class="form-label" id="inputLabel">Enter Member ID to Check In</label>
+          <label class="form-label" id="inputLabel">Member ID</label>
           <input class="form-input" id="memberIdInput" type="text"
             placeholder="E.G. AK-001"
             autocomplete="off" autocorrect="off"
             autocapitalize="characters" spellcheck="false"/>
         </div>
 
-        <button class="btn btn-primary btn-block btn-large" id="actionBtn">CHECK IN</button>
-
-        <button class="btn btn-secondary btn-block mt-8" id="resetBtn"
-          style="padding:12px;font-size:0.9rem;letter-spacing:3px">
-          CLEAR / RESET
+        <button class="btn btn-primary btn-block btn-xl" id="actionBtn"
+          style="margin-bottom:10px">
+          CHECK IN
+        </button>
+        <button class="btn btn-secondary btn-block" id="resetBtn"
+          style="font-size:0.85rem">
+          Clear / Reset
         </button>
       </div>
 
       <!-- LOADING -->
-      <div id="loadingSpinner" class="hidden text-center mt-24">
+      <div id="loadingSpinner" class="hidden text-center mt-24" style="width:100%;max-width:540px">
         <div class="spinner"></div>
-        <p id="loadingText" style="font-family:var(--font-heading);letter-spacing:4px;font-size:0.85rem;color:var(--white-dim);margin-top:8px">
-          SEARCHING PACK...
+        <p id="loadingText" style="font-size:0.82rem;color:var(--text-3);margin-top:8px;letter-spacing:2px;text-transform:uppercase">
+          Searching...
         </p>
       </div>
 
       <!-- MESSAGES -->
-      <div id="terminalMessage" class="hidden" style="max-width:560px;margin:16px auto 0"></div>
+      <div id="terminalMessage" class="hidden" style="width:100%;max-width:540px;margin-top:16px"></div>
 
-      <!-- RESULT CARD -->
-      <div id="memberResult" class="hidden mt-24" style="max-width:680px;margin-left:auto;margin-right:auto"></div>
+      <!-- RESULT -->
+      <div id="memberResult" class="hidden mt-24" style="width:100%;max-width:620px"></div>
 
-      <!-- AUTO RESET COUNTDOWN -->
-      <div id="autoResetBar" class="hidden" style="max-width:680px;margin:20px auto 0;text-align:center">
-        <p style="font-family:var(--font-heading);font-size:0.78rem;letter-spacing:3px;
-                  color:rgba(255,255,255,0.3);margin-bottom:8px;text-transform:uppercase">
-          Screen resets in <span id="countdownNum" style="color:var(--white-dim);font-weight:700">5</span>s
-          — <span style="text-decoration:underline;cursor:pointer" onclick="stopAutoReset()">Cancel</span>
+      <!-- COUNTDOWN BAR -->
+      <div id="autoResetBar" class="hidden" style="width:100%;max-width:620px;margin-top:16px;text-align:center">
+        <p style="font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-3);margin-bottom:6px">
+          Screen resets in <span id="countdownNum" style="font-weight:700;color:var(--text-2)">5</span>s ·
+          <span style="text-decoration:underline;cursor:pointer;color:var(--red)" onclick="stopAutoReset()">Cancel</span>
         </p>
-        <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden">
-          <div id="countdownBar"
-            style="height:100%;background:linear-gradient(90deg,var(--red),var(--red-bright));
-                   width:100%;transition:width 5s linear;border-radius:2px">
-          </div>
+        <div style="height:3px;background:var(--border);border-radius:99px;overflow:hidden">
+          <div id="countdownBar" style="height:100%;background:var(--red);width:100%;transition:width 5s linear;border-radius:99px"></div>
         </div>
       </div>
 
-    </div>
-  </main>
+    </main>
 
-  <!-- ─── FOOTER ─── -->
-  <footer class="site-footer">
-    <p>AK PACK FITNESS &copy; <span id="fyear"></span> — <span>ATTENDANCE SYSTEM</span></p>
-    <p style="margin-top:8px;display:flex;justify-content:center;gap:16px;align-items:center">
-      <button onclick="showConfigOverlay()"
-        style="background:none;border:none;color:rgba(255,255,255,0.15);
-               font-family:var(--font-heading);font-size:0.7rem;letter-spacing:3px;
-               cursor:pointer;text-transform:uppercase">
-        ⚙ SETTINGS
-      </button>
-      <button onclick="openAdminLogin()"
-        style="background:none;border:none;color:rgba(255,255,255,0.04);
-               font-size:0.7rem;cursor:pointer">●</button>
-    </p>
-  </footer>
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <p>AK PACK FITNESS &copy; <span id="fyear"></span> — <span>ATTENDANCE SYSTEM</span></p>
+    </footer>
+  </div>
 
   <script src="script.js"></script>
   <script>
     document.getElementById('fyear').textContent = new Date().getFullYear();
 
-    // ── Mode ──────────────────────────────────────────────────
+    // ── Live clock ──
+    function updateClock() {
+      document.getElementById('currentTimeDisplay').textContent = nowTime();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // ── Mode ──
     let currentMode = 'checkin';
 
     function setMode(mode) {
@@ -139,190 +223,147 @@
       const ci = document.getElementById('modeCheckInBtn');
       const ex = document.getElementById('modeExitBtn');
 
+      ci.className = 'mode-btn' + (mode === 'checkin' ? ' active' : '');
+      ex.className = 'mode-btn' + (mode === 'exit'    ? ' active-exit' : '');
+
       if (mode === 'checkin') {
-        ci.style.background = 'var(--red)';   ci.style.color = 'var(--white)';
-        ex.style.background = 'transparent';  ex.style.color = 'var(--white-dim)';
-        document.getElementById('cardTitle').textContent  = 'CHECK IN';
-        document.getElementById('inputLabel').textContent = 'Enter Member ID to Check In';
+        document.getElementById('cardTitle').innerHTML = '<span>CHECK</span> IN';
+        document.getElementById('cardSub').textContent  = 'Enter Member ID to Check In';
+        document.getElementById('inputLabel').textContent = 'Member ID';
         document.getElementById('actionBtn').textContent  = 'CHECK IN';
         document.getElementById('actionBtn').style.background = 'var(--red)';
-        document.getElementById('actionBtn').style.boxShadow  = '0 4px 24px var(--red-glow)';
+        document.getElementById('actionBtn').style.boxShadow  = '0 2px 8px var(--red-glow)';
+        document.getElementById('topbarTitle').textContent = 'Check In Terminal';
       } else {
-        ex.style.background = 'var(--red)';   ex.style.color = 'var(--white)';
-        ci.style.background = 'transparent';  ci.style.color = 'var(--white-dim)';
-        document.getElementById('cardTitle').textContent  = 'MARK EXIT';
-        document.getElementById('inputLabel').textContent = 'Enter Member ID to Mark Exit';
-        document.getElementById('actionBtn').textContent  = 'MARK EXIT 🚪';
-        document.getElementById('actionBtn').style.background = '#444';
-        document.getElementById('actionBtn').style.boxShadow  = 'none';
+        document.getElementById('cardTitle').innerHTML = '<span>MARK</span> EXIT';
+        document.getElementById('cardSub').textContent  = 'Enter Member ID to Mark Exit';
+        document.getElementById('inputLabel').textContent = 'Member ID';
+        document.getElementById('actionBtn').textContent  = '🚪 MARK EXIT';
+        document.getElementById('actionBtn').style.background = '#3b82f6';
+        document.getElementById('actionBtn').style.boxShadow  = '0 2px 8px rgba(59,130,246,0.3)';
+        document.getElementById('topbarTitle').textContent = 'Exit Terminal';
       }
 
-      fullReset(false); // clear result but don't change mode again
+      fullReset(false);
     }
 
-    // ── Auto reset countdown ──────────────────────────────────
-    let autoResetTimer    = null;
-    let countdownInterval = null;
+    // ── Auto reset ──
+    let autoResetTimer = null, countdownInterval = null;
 
     function startAutoReset() {
       stopAutoReset();
       let secs = 5;
       document.getElementById('autoResetBar').classList.remove('hidden');
       document.getElementById('countdownNum').textContent = secs;
-
-      // Reset bar then animate
       const bar = document.getElementById('countdownBar');
-      bar.style.transition = 'none';
-      bar.style.width = '100%';
+      bar.style.transition = 'none'; bar.style.width = '100%';
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        bar.style.transition = 'width 5s linear';
-        bar.style.width = '0%';
+        bar.style.transition = 'width 5s linear'; bar.style.width = '0%';
       }));
-
       countdownInterval = setInterval(() => {
         secs--;
         document.getElementById('countdownNum').textContent = secs;
       }, 1000);
-
       autoResetTimer = setTimeout(() => fullReset(true), 5000);
     }
 
     function stopAutoReset() {
-      clearTimeout(autoResetTimer);
-      clearInterval(countdownInterval);
+      clearTimeout(autoResetTimer); clearInterval(countdownInterval);
       autoResetTimer = countdownInterval = null;
       document.getElementById('autoResetBar').classList.add('hidden');
     }
 
     function fullReset(returnToCheckin = true) {
-      stopAutoReset();
-      clearResult();
+      stopAutoReset(); clearResult();
       document.getElementById('memberIdInput').value = '';
       document.getElementById('memberIdInput').focus();
       if (returnToCheckin && currentMode !== 'checkin') setMode('checkin');
     }
 
-    // Cancel reset when user touches input
+    // ── Patch renderMemberCard to start auto-reset ──
     document.addEventListener('DOMContentLoaded', () => {
-      const inp = document.getElementById('memberIdInput');
-      inp.addEventListener('focus', stopAutoReset);
-      inp.addEventListener('input', stopAutoReset);
-    });
-
-    // ── Patch renderMemberCard to start auto-reset ────────────
-    document.addEventListener('DOMContentLoaded', () => {
-      // Wait for script.js to define renderMemberCard, then wrap it
-      const origRender = window.renderMemberCard;
-      if (typeof origRender === 'function') {
+      const orig = window.renderMemberCard;
+      if (typeof orig === 'function') {
         window.renderMemberCard = function(member, days, statusType) {
-          origRender(member, days, statusType);
-          startAutoReset();
+          orig(member, days, statusType); startAutoReset();
         };
       }
     });
 
-    // ── Action button ─────────────────────────────────────────
+    // ── Buttons ──
     document.addEventListener('DOMContentLoaded', () => {
       requireConfig();
-
+      const inp = document.getElementById('memberIdInput');
+      inp.addEventListener('focus', stopAutoReset);
+      inp.addEventListener('input', stopAutoReset);
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('actionBtn').click(); });
       document.getElementById('actionBtn').addEventListener('click', () => {
         if (!requireConfig()) return;
-        const val = document.getElementById('memberIdInput').value;
-        if (currentMode === 'checkin') {
-          handleCheckIn(val);
-          // auto-reset is triggered inside renderMemberCard patch above
-        } else {
-          handleExitMember(val);
-        }
+        const val = inp.value;
+        currentMode === 'checkin' ? handleCheckIn(val) : handleExitMember(val);
       });
-
-      document.getElementById('memberIdInput').addEventListener('keydown', e => {
-        if (e.key === 'Enter') document.getElementById('actionBtn').click();
-      });
-
       document.getElementById('resetBtn').addEventListener('click', () => fullReset(true));
-
-      setTimeout(() => document.getElementById('memberIdInput').focus(), 150);
+      setTimeout(() => inp.focus(), 150);
     });
 
-    // ── EXIT function ─────────────────────────────────────────
+    // ── Exit handler ──
     async function handleExitMember(memberIdInput) {
       const id = memberIdInput.trim();
       if (!id) { showTerminalMessage('Please enter a Member ID.', 'warning'); return; }
-
       showLoading(true);
-      document.getElementById('loadingText').textContent = 'RECORDING EXIT...';
+      document.getElementById('loadingText').textContent = 'Recording exit...';
       clearResult();
-
       try {
         const row = await lookupMember(id);
-        if (!row) {
-          showLoading(false);
-          showTerminalMessage(`Member ID "${id}" not found. Check ID and try again.`, 'danger');
-          return;
-        }
-
+        if (!row) { showLoading(false); showTerminalMessage(`Member ID "${id}" not found.`, 'danger'); return; }
         const member = {
           memberID: row['MemberID'] || row['Member ID'] || id,
           name:     row['Name']     || row['name']     || 'Unknown',
         };
-
         const exitTime = nowTime();
-
-        // Write exit record to Attendance sheet
-        try {
-          await writeRow('Attendance', [today(), exitTime, member.memberID, member.name, 'EXIT']);
-        } catch(e) {
-          console.warn('Exit write failed:', e);
-        }
-
+        try { await writeRow('Attendance', [today(), exitTime, member.memberID, member.name, 'EXIT']); }
+        catch(e) { console.warn('Exit write failed:', e); }
         showLoading(false);
-
         const resultEl = document.getElementById('memberResult');
         resultEl.innerHTML = `
           <div class="member-result">
-            <div class="member-card" style="border-color:rgba(255,255,255,0.18);text-align:center;padding:40px 32px">
-              <div style="font-size:3.5rem;margin-bottom:14px">👋</div>
-              <div class="member-card-name">${member.name.toUpperCase()}</div>
-              <div class="member-card-id" style="margin-bottom:24px">ID: ${member.memberID}</div>
-              <div style="display:inline-block;padding:10px 28px;background:rgba(255,255,255,0.04);
-                          border:1px solid rgba(255,255,255,0.12);border-radius:3px;margin-bottom:20px">
-                <div style="font-family:var(--font-heading);font-size:0.72rem;letter-spacing:4px;
-                            color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:4px">Exit Time</div>
-                <div style="font-family:var(--font-display);font-size:2.6rem;letter-spacing:4px;color:var(--white)">
-                  ${exitTime}
+            <div class="member-card" style="border-color:var(--blue-border);text-align:center;padding:36px">
+              <div class="member-card" style="all:unset;display:block">
+                <div style="font-size:3rem;margin-bottom:12px">👋</div>
+                <div style="font-family:var(--font-display);font-size:2.6rem;letter-spacing:3px;color:var(--text);margin-bottom:4px">
+                  ${member.name.toUpperCase()}
                 </div>
-              </div>
-              <div style="padding:16px 20px;background:rgba(255,255,255,0.03);
-                          border:1px solid rgba(255,255,255,0.08);border-radius:3px">
-                <div style="font-family:var(--font-display);font-size:1.5rem;letter-spacing:5px;color:var(--white-dim)">
-                  EXIT RECORDED — GREAT WORKOUT! 💪
+                <div style="font-family:'Courier New',monospace;font-size:0.85rem;color:var(--red);margin-bottom:20px">ID: ${member.memberID}</div>
+                <div style="display:inline-block;background:var(--blue-bg);border:1.5px solid var(--blue-border);border-radius:var(--radius-sm);padding:14px 32px;margin-bottom:16px">
+                  <div style="font-size:0.68rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-3);margin-bottom:4px">Exit Time</div>
+                  <div style="font-family:var(--font-display);font-size:2.2rem;letter-spacing:3px;color:#1d4ed8">${exitTime}</div>
+                </div>
+                <div style="background:var(--green-bg);border:1.5px solid var(--green-border);border-radius:var(--radius-sm);padding:14px 20px">
+                  <div style="font-family:var(--font-heading);font-size:1.2rem;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:#16a34a">
+                    EXIT RECORDED — GREAT WORKOUT! 💪
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        `;
+          </div>`;
         resultEl.classList.remove('hidden');
         startAutoReset();
-
       } catch(err) {
         showLoading(false);
         showTerminalMessage(`Error: ${err.message}`, 'danger');
-        console.error(err);
       }
     }
 
-    // ── Secret logo tap (5×) → admin login ───────────────────
+    // ── Secret logo tap (5×) + admin login ──
     let logoTaps = 0, logoTimer;
-    document.getElementById('logoTapTarget').addEventListener('click', () => {
+    document.querySelector('.sidebar-logo').addEventListener('click', () => {
       logoTaps++;
       clearTimeout(logoTimer);
       logoTimer = setTimeout(() => logoTaps = 0, 3000);
       if (logoTaps >= 5) { logoTaps = 0; openAdminLogin(); }
     });
 
-    // ── Admin login ───────────────────────────────────────────
-    const ADMIN_PASSWORD = 'akpack2025'; // ← change this!
+    const ADMIN_PASSWORD = 'akpack2025'; // ← Change this!
 
     function openAdminLogin() {
       document.getElementById('adminLoginOverlay').classList.remove('hidden');
@@ -336,34 +377,33 @@
     function checkAdminPassword() {
       if (document.getElementById('adminPasswordInput').value === ADMIN_PASSWORD) {
         closeAdminLogin();
-        showAdminMenu();
+        // Reveal admin links in sidebar
+        document.getElementById('adminMonitorLink').classList.remove('hidden');
+        document.getElementById('historyLink').classList.remove('hidden');
+        // Show popup
+        const overlay = document.createElement('div');
+        overlay.className = 'config-overlay';
+        overlay.id = 'adminMenuOverlay';
+        overlay.innerHTML = `
+          <div class="config-box" style="max-width:380px">
+            <div class="config-title" style="margin-bottom:20px">🐺 Admin Panel</div>
+            <a href="admin.html" class="btn btn-primary btn-block"
+              style="display:flex;text-decoration:none;margin-bottom:8px;padding:14px;font-size:0.95rem">
+              📊 Attendance Monitor
+            </a>
+            <a href="history.html" class="btn btn-secondary btn-block"
+              style="display:flex;text-decoration:none;margin-bottom:20px;padding:14px;font-size:0.95rem">
+              📋 Attendance History
+            </a>
+            <button class="btn btn-ghost btn-block"
+              onclick="document.getElementById('adminMenuOverlay').remove()">Close</button>
+          </div>`;
+        document.body.appendChild(overlay);
       } else {
         document.getElementById('adminLoginError').classList.remove('hidden');
         document.getElementById('adminPasswordInput').value = '';
         document.getElementById('adminPasswordInput').focus();
       }
-    }
-    function showAdminMenu() {
-      document.getElementById('adminMenuOverlay')?.remove();
-      const overlay = document.createElement('div');
-      overlay.className = 'config-overlay';
-      overlay.id = 'adminMenuOverlay';
-      overlay.innerHTML = `
-        <div class="config-box" style="max-width:400px">
-          <div class="config-title" style="margin-bottom:20px">🐺 ADMIN PANEL</div>
-          <a href="admin.html" class="btn btn-primary btn-block"
-            style="display:block;text-align:center;text-decoration:none;margin-bottom:10px;padding:16px">
-            📊 ATTENDANCE MONITOR
-          </a>
-          <a href="history.html" class="btn btn-secondary btn-block"
-            style="display:block;text-align:center;text-decoration:none;margin-bottom:20px;padding:16px">
-            📋 ATTENDANCE HISTORY
-          </a>
-          <button class="btn btn-secondary btn-block"
-            onclick="document.getElementById('adminMenuOverlay').remove()">CLOSE</button>
-        </div>
-      `;
-      document.body.appendChild(overlay);
     }
   </script>
 </body>

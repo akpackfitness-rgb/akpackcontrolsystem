@@ -11,58 +11,102 @@
 
   <!-- ─── HEADER ─── -->
   <header class="site-header">
-    <div class="header-logo"><span>AK</span> PACK FITNESS</div>
+    <div class="header-logo" id="logoTapTarget"><span>AK</span> PACK FITNESS</div>
     <div class="header-subtitle">Attendance Terminal</div>
-    <nav class="header-nav">
-      <a href="index.html" class="active">CHECK IN</a>
-      <a href="admin.html">ADMIN MONITOR</a>
-      <a href="history.html">HISTORY</a>
-    </nav>
   </header>
+
+  <!-- ─── HIDDEN ADMIN LOGIN OVERLAY ─── -->
+  <div id="adminLoginOverlay" class="config-overlay hidden">
+    <div class="config-box">
+      <div class="config-title">🔒 ADMIN ACCESS</div>
+      <p class="config-note">Enter the admin password to continue.</p>
+      <input class="config-input" id="adminPasswordInput" type="password"
+        placeholder="Enter password..."
+        onkeydown="if(event.key==='Enter') checkAdminPassword()"/>
+      <div id="adminLoginError" class="hidden"
+        style="color:var(--red-bright);font-family:var(--font-heading);font-size:0.85rem;letter-spacing:2px;margin-bottom:12px">
+        ✖ INCORRECT PASSWORD
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn btn-primary" style="flex:1" onclick="checkAdminPassword()">ENTER</button>
+        <button class="btn btn-secondary" onclick="closeAdminLogin()">CANCEL</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ─── MAIN ─── -->
   <main class="page-content">
     <div class="container">
 
-      <!-- CHECK-IN CARD -->
+      <!-- MODE TOGGLE -->
+      <div style="display:flex;justify-content:center;margin-bottom:24px">
+        <button id="modeCheckInBtn" onclick="setMode('checkin')"
+          style="font-family:var(--font-heading);font-size:1rem;font-weight:700;letter-spacing:4px;
+                 text-transform:uppercase;padding:14px 40px;
+                 border:2px solid var(--red);border-right:1px solid var(--red);
+                 background:var(--red);color:var(--white);
+                 cursor:pointer;border-radius:2px 0 0 2px;transition:all 0.2s">
+          🏋️ CHECK IN
+        </button>
+        <button id="modeExitBtn" onclick="setMode('exit')"
+          style="font-family:var(--font-heading);font-size:1rem;font-weight:700;letter-spacing:4px;
+                 text-transform:uppercase;padding:14px 40px;
+                 border:2px solid var(--red);border-left:1px solid var(--red);
+                 background:transparent;color:var(--white-dim);
+                 cursor:pointer;border-radius:0 2px 2px 0;transition:all 0.2s">
+          🚪 EXIT
+        </button>
+      </div>
+
+      <!-- INPUT CARD -->
       <div class="card" style="max-width:560px;margin:0 auto">
-        <div class="section-title text-center">CHECK IN</div>
+        <div class="section-title text-center" id="cardTitle">CHECK IN</div>
         <div class="section-divider" style="margin:6px auto 24px"></div>
 
         <div class="form-group">
-          <label class="form-label" for="memberIdInput">Enter Member ID</label>
-          <input
-            class="form-input"
-            id="memberIdInput"
-            type="text"
+          <label class="form-label" id="inputLabel">Enter Member ID to Check In</label>
+          <input class="form-input" id="memberIdInput" type="text"
             placeholder="E.G. AK-001"
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="characters"
-            spellcheck="false"
-          />
+            autocomplete="off" autocorrect="off"
+            autocapitalize="characters" spellcheck="false"/>
         </div>
 
-        <button class="btn btn-primary btn-block btn-large" id="checkInBtn">
-          CHECK IN
-        </button>
+        <button class="btn btn-primary btn-block btn-large" id="actionBtn">CHECK IN</button>
 
-        <button class="btn btn-secondary btn-block mt-8" id="resetBtn" style="padding:12px;font-size:0.9rem;letter-spacing:3px">
+        <button class="btn btn-secondary btn-block mt-8" id="resetBtn"
+          style="padding:12px;font-size:0.9rem;letter-spacing:3px">
           CLEAR / RESET
         </button>
       </div>
 
-      <!-- LOADING SPINNER -->
+      <!-- LOADING -->
       <div id="loadingSpinner" class="hidden text-center mt-24">
         <div class="spinner"></div>
-        <p style="font-family:var(--font-heading);letter-spacing:4px;font-size:0.85rem;color:var(--white-dim);margin-top:8px">SEARCHING PACK...</p>
+        <p id="loadingText" style="font-family:var(--font-heading);letter-spacing:4px;font-size:0.85rem;color:var(--white-dim);margin-top:8px">
+          SEARCHING PACK...
+        </p>
       </div>
 
-      <!-- TERMINAL MESSAGE (errors/warnings before result) -->
+      <!-- MESSAGES -->
       <div id="terminalMessage" class="hidden" style="max-width:560px;margin:16px auto 0"></div>
 
-      <!-- MEMBER RESULT CARD -->
+      <!-- RESULT CARD -->
       <div id="memberResult" class="hidden mt-24" style="max-width:680px;margin-left:auto;margin-right:auto"></div>
+
+      <!-- AUTO RESET COUNTDOWN -->
+      <div id="autoResetBar" class="hidden" style="max-width:680px;margin:20px auto 0;text-align:center">
+        <p style="font-family:var(--font-heading);font-size:0.78rem;letter-spacing:3px;
+                  color:rgba(255,255,255,0.3);margin-bottom:8px;text-transform:uppercase">
+          Screen resets in <span id="countdownNum" style="color:var(--white-dim);font-weight:700">5</span>s
+          — <span style="text-decoration:underline;cursor:pointer" onclick="stopAutoReset()">Cancel</span>
+        </p>
+        <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden">
+          <div id="countdownBar"
+            style="height:100%;background:linear-gradient(90deg,var(--red),var(--red-bright));
+                   width:100%;transition:width 5s linear;border-radius:2px">
+          </div>
+        </div>
+      </div>
 
     </div>
   </main>
@@ -70,20 +114,257 @@
   <!-- ─── FOOTER ─── -->
   <footer class="site-footer">
     <p>AK PACK FITNESS &copy; <span id="fyear"></span> — <span>ATTENDANCE SYSTEM</span></p>
-    <p style="margin-top:8px">
-      <button onclick="showConfigOverlay()" style="background:none;border:none;color:rgba(255,255,255,0.2);font-family:var(--font-heading);font-size:0.7rem;letter-spacing:3px;cursor:pointer;text-transform:uppercase" id="settingsBtn">
+    <p style="margin-top:8px;display:flex;justify-content:center;gap:16px;align-items:center">
+      <button onclick="showConfigOverlay()"
+        style="background:none;border:none;color:rgba(255,255,255,0.15);
+               font-family:var(--font-heading);font-size:0.7rem;letter-spacing:3px;
+               cursor:pointer;text-transform:uppercase">
         ⚙ SETTINGS
       </button>
+      <button onclick="openAdminLogin()"
+        style="background:none;border:none;color:rgba(255,255,255,0.04);
+               font-size:0.7rem;cursor:pointer">●</button>
     </p>
   </footer>
 
   <script src="script.js"></script>
   <script>
     document.getElementById('fyear').textContent = new Date().getFullYear();
-    // Check config on load — show setup if missing
+
+    // ── Mode ──────────────────────────────────────────────────
+    let currentMode = 'checkin';
+
+    function setMode(mode) {
+      currentMode = mode;
+      const ci = document.getElementById('modeCheckInBtn');
+      const ex = document.getElementById('modeExitBtn');
+
+      if (mode === 'checkin') {
+        ci.style.background = 'var(--red)';   ci.style.color = 'var(--white)';
+        ex.style.background = 'transparent';  ex.style.color = 'var(--white-dim)';
+        document.getElementById('cardTitle').textContent  = 'CHECK IN';
+        document.getElementById('inputLabel').textContent = 'Enter Member ID to Check In';
+        document.getElementById('actionBtn').textContent  = 'CHECK IN';
+        document.getElementById('actionBtn').style.background = 'var(--red)';
+        document.getElementById('actionBtn').style.boxShadow  = '0 4px 24px var(--red-glow)';
+      } else {
+        ex.style.background = 'var(--red)';   ex.style.color = 'var(--white)';
+        ci.style.background = 'transparent';  ci.style.color = 'var(--white-dim)';
+        document.getElementById('cardTitle').textContent  = 'MARK EXIT';
+        document.getElementById('inputLabel').textContent = 'Enter Member ID to Mark Exit';
+        document.getElementById('actionBtn').textContent  = 'MARK EXIT 🚪';
+        document.getElementById('actionBtn').style.background = '#444';
+        document.getElementById('actionBtn').style.boxShadow  = 'none';
+      }
+
+      fullReset(false); // clear result but don't change mode again
+    }
+
+    // ── Auto reset countdown ──────────────────────────────────
+    let autoResetTimer    = null;
+    let countdownInterval = null;
+
+    function startAutoReset() {
+      stopAutoReset();
+      let secs = 5;
+      document.getElementById('autoResetBar').classList.remove('hidden');
+      document.getElementById('countdownNum').textContent = secs;
+
+      // Reset bar then animate
+      const bar = document.getElementById('countdownBar');
+      bar.style.transition = 'none';
+      bar.style.width = '100%';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        bar.style.transition = 'width 5s linear';
+        bar.style.width = '0%';
+      }));
+
+      countdownInterval = setInterval(() => {
+        secs--;
+        document.getElementById('countdownNum').textContent = secs;
+      }, 1000);
+
+      autoResetTimer = setTimeout(() => fullReset(true), 5000);
+    }
+
+    function stopAutoReset() {
+      clearTimeout(autoResetTimer);
+      clearInterval(countdownInterval);
+      autoResetTimer = countdownInterval = null;
+      document.getElementById('autoResetBar').classList.add('hidden');
+    }
+
+    function fullReset(returnToCheckin = true) {
+      stopAutoReset();
+      clearResult();
+      document.getElementById('memberIdInput').value = '';
+      document.getElementById('memberIdInput').focus();
+      if (returnToCheckin && currentMode !== 'checkin') setMode('checkin');
+    }
+
+    // Cancel reset when user touches input
+    document.addEventListener('DOMContentLoaded', () => {
+      const inp = document.getElementById('memberIdInput');
+      inp.addEventListener('focus', stopAutoReset);
+      inp.addEventListener('input', stopAutoReset);
+    });
+
+    // ── Patch renderMemberCard to start auto-reset ────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      // Wait for script.js to define renderMemberCard, then wrap it
+      const origRender = window.renderMemberCard;
+      if (typeof origRender === 'function') {
+        window.renderMemberCard = function(member, days, statusType) {
+          origRender(member, days, statusType);
+          startAutoReset();
+        };
+      }
+    });
+
+    // ── Action button ─────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
       requireConfig();
+
+      document.getElementById('actionBtn').addEventListener('click', () => {
+        if (!requireConfig()) return;
+        const val = document.getElementById('memberIdInput').value;
+        if (currentMode === 'checkin') {
+          handleCheckIn(val);
+          // auto-reset is triggered inside renderMemberCard patch above
+        } else {
+          handleExitMember(val);
+        }
+      });
+
+      document.getElementById('memberIdInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('actionBtn').click();
+      });
+
+      document.getElementById('resetBtn').addEventListener('click', () => fullReset(true));
+
+      setTimeout(() => document.getElementById('memberIdInput').focus(), 150);
     });
+
+    // ── EXIT function ─────────────────────────────────────────
+    async function handleExitMember(memberIdInput) {
+      const id = memberIdInput.trim();
+      if (!id) { showTerminalMessage('Please enter a Member ID.', 'warning'); return; }
+
+      showLoading(true);
+      document.getElementById('loadingText').textContent = 'RECORDING EXIT...';
+      clearResult();
+
+      try {
+        const row = await lookupMember(id);
+        if (!row) {
+          showLoading(false);
+          showTerminalMessage(`Member ID "${id}" not found. Check ID and try again.`, 'danger');
+          return;
+        }
+
+        const member = {
+          memberID: row['MemberID'] || row['Member ID'] || id,
+          name:     row['Name']     || row['name']     || 'Unknown',
+        };
+
+        const exitTime = nowTime();
+
+        // Write exit record to Attendance sheet
+        try {
+          await writeRow('Attendance', [today(), exitTime, member.memberID, member.name, 'EXIT']);
+        } catch(e) {
+          console.warn('Exit write failed:', e);
+        }
+
+        showLoading(false);
+
+        const resultEl = document.getElementById('memberResult');
+        resultEl.innerHTML = `
+          <div class="member-result">
+            <div class="member-card" style="border-color:rgba(255,255,255,0.18);text-align:center;padding:40px 32px">
+              <div style="font-size:3.5rem;margin-bottom:14px">👋</div>
+              <div class="member-card-name">${member.name.toUpperCase()}</div>
+              <div class="member-card-id" style="margin-bottom:24px">ID: ${member.memberID}</div>
+              <div style="display:inline-block;padding:10px 28px;background:rgba(255,255,255,0.04);
+                          border:1px solid rgba(255,255,255,0.12);border-radius:3px;margin-bottom:20px">
+                <div style="font-family:var(--font-heading);font-size:0.72rem;letter-spacing:4px;
+                            color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:4px">Exit Time</div>
+                <div style="font-family:var(--font-display);font-size:2.6rem;letter-spacing:4px;color:var(--white)">
+                  ${exitTime}
+                </div>
+              </div>
+              <div style="padding:16px 20px;background:rgba(255,255,255,0.03);
+                          border:1px solid rgba(255,255,255,0.08);border-radius:3px">
+                <div style="font-family:var(--font-display);font-size:1.5rem;letter-spacing:5px;color:var(--white-dim)">
+                  EXIT RECORDED — GREAT WORKOUT! 💪
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        resultEl.classList.remove('hidden');
+        startAutoReset();
+
+      } catch(err) {
+        showLoading(false);
+        showTerminalMessage(`Error: ${err.message}`, 'danger');
+        console.error(err);
+      }
+    }
+
+    // ── Secret logo tap (5×) → admin login ───────────────────
+    let logoTaps = 0, logoTimer;
+    document.getElementById('logoTapTarget').addEventListener('click', () => {
+      logoTaps++;
+      clearTimeout(logoTimer);
+      logoTimer = setTimeout(() => logoTaps = 0, 3000);
+      if (logoTaps >= 5) { logoTaps = 0; openAdminLogin(); }
+    });
+
+    // ── Admin login ───────────────────────────────────────────
+    const ADMIN_PASSWORD = 'akpack2025'; // ← change this!
+
+    function openAdminLogin() {
+      document.getElementById('adminLoginOverlay').classList.remove('hidden');
+      document.getElementById('adminPasswordInput').value = '';
+      document.getElementById('adminLoginError').classList.add('hidden');
+      setTimeout(() => document.getElementById('adminPasswordInput').focus(), 100);
+    }
+    function closeAdminLogin() {
+      document.getElementById('adminLoginOverlay').classList.add('hidden');
+    }
+    function checkAdminPassword() {
+      if (document.getElementById('adminPasswordInput').value === ADMIN_PASSWORD) {
+        closeAdminLogin();
+        showAdminMenu();
+      } else {
+        document.getElementById('adminLoginError').classList.remove('hidden');
+        document.getElementById('adminPasswordInput').value = '';
+        document.getElementById('adminPasswordInput').focus();
+      }
+    }
+    function showAdminMenu() {
+      document.getElementById('adminMenuOverlay')?.remove();
+      const overlay = document.createElement('div');
+      overlay.className = 'config-overlay';
+      overlay.id = 'adminMenuOverlay';
+      overlay.innerHTML = `
+        <div class="config-box" style="max-width:400px">
+          <div class="config-title" style="margin-bottom:20px">🐺 ADMIN PANEL</div>
+          <a href="admin.html" class="btn btn-primary btn-block"
+            style="display:block;text-align:center;text-decoration:none;margin-bottom:10px;padding:16px">
+            📊 ATTENDANCE MONITOR
+          </a>
+          <a href="history.html" class="btn btn-secondary btn-block"
+            style="display:block;text-align:center;text-decoration:none;margin-bottom:20px;padding:16px">
+            📋 ATTENDANCE HISTORY
+          </a>
+          <button class="btn btn-secondary btn-block"
+            onclick="document.getElementById('adminMenuOverlay').remove()">CLOSE</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
   </script>
 </body>
 </html>

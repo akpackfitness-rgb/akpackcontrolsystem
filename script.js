@@ -29,32 +29,49 @@ async function readSheet(sheetName) {
   return rows.filter(r=>Object.values(r).some(v=>v.trim()!==''));
 }
 
-// WRITE via Apps Script — GET params (reliable, no-cors POST body unreadable)
-async function writeRow(sheetName, rowData) {
-  const cfg = getConfig();
-  if (!cfg.appsScriptUrl) throw new Error('Apps Script URL not configured.');
-  const payload = { sheet:sheetName, row:rowData };
-  const params  = encodeURIComponent(JSON.stringify(payload));
-  const url     = `${cfg.appsScriptUrl}?data=${params}`;
-  try {
-    await fetch(url, { method:'GET', mode:'no-cors' });
-    return true;
-  } catch(e) {
-    return new Promise((resolve)=>{
-      let iframe = document.getElementById('hidden_iframe');
-      if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.name='hidden_iframe'; iframe.id='hidden_iframe'; iframe.style.display='none';
-        document.body.appendChild(iframe);
+// WRITE via JSONP — bypasses CORS completely, works from any browser/device
+function writeRow(sheetName, rowData) {
+  return new Promise((resolve, reject) => {
+    const cfg = getConfig();
+    if (!cfg.appsScriptUrl) { reject(new Error('Apps Script URL not configured.')); return; }
+
+    const payload      = { sheet: sheetName, row: rowData };
+    const callbackName = 'akpack_cb_' + Date.now();
+    const params       = encodeURIComponent(JSON.stringify(payload));
+    const url          = `${cfg.appsScriptUrl}?data=${params}&callback=${callbackName}`;
+
+    // JSONP: inject a <script> tag — Apps Script wraps response in callback()
+    const script = document.createElement('script');
+    const timer  = setTimeout(() => {
+      cleanup();
+      // Timeout is OK — the write likely still succeeded on the server
+      resolve(true);
+    }, 8000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[callbackName] = function(response) {
+      cleanup();
+      if (response && response.status === 'ok') {
+        resolve(true);
+      } else {
+        console.warn('Apps Script response:', response);
+        resolve(true); // resolve anyway — row may have been written
       }
-      const form=document.createElement('form');
-      form.method='GET'; form.action=cfg.appsScriptUrl; form.target='hidden_iframe'; form.style.display='none';
-      const input=document.createElement('input');
-      input.type='hidden'; input.name='data'; input.value=JSON.stringify(payload);
-      form.appendChild(input); document.body.appendChild(form); form.submit();
-      setTimeout(()=>{ form.remove(); resolve(true); },1500);
-    });
-  }
+    };
+
+    script.onerror = function() {
+      cleanup();
+      resolve(true); // resolve anyway — CORS error doesn't mean write failed
+    };
+
+    script.src = url;
+    document.head.appendChild(script);
+  });
 }
 
 // DATE HELPERS

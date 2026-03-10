@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
   <title>AK Pack Fitness — Pack Training Plans</title>
   <link rel="stylesheet" href="style.css"/>
   <style>
@@ -31,26 +32,22 @@
     .day-exercises { display:none; }
     .day-section.open .day-exercises { display:block; }
 
-```
-/* Admin form */
-.admin-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.admin-form-grid .span2 { grid-column:1/-1; }
-.form-group-sm { margin-bottom:0; }
-.form-group-sm label { display:block; font-size:0.68rem; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text-3); margin-bottom:5px; }
-.row-actions { display:flex; gap:6px; }
-.icon-btn { width:30px; height:30px; border:none; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.9rem; transition:all 0.18s; }
-.icon-btn-del { background:var(--red-bg); color:var(--red-status); }
-.icon-btn-del:hover { background:var(--red-status); color:#fff; }
-.empty-plan { text-align:center; padding:48px 20px; }
-.empty-plan-icon { font-size:3.5rem; margin-bottom:12px; }
-```
-
+    /* Admin form */
+    .admin-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .admin-form-grid .span2 { grid-column:1/-1; }
+    .form-group-sm { margin-bottom:0; }
+    .form-group-sm label { display:block; font-size:0.68rem; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text-3); margin-bottom:5px; }
+    .row-actions { display:flex; gap:6px; }
+    .icon-btn { width:30px; height:30px; border:none; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.9rem; transition:all 0.18s; }
+    .icon-btn-del { background:var(--red-bg); color:var(--red-status); }
+    .icon-btn-del:hover { background:var(--red-status); color:#fff; }
+    .empty-plan { text-align:center; padding:48px 20px; }
+    .empty-plan-icon { font-size:3.5rem; margin-bottom:12px; }
   </style>
 </head>
 <body>
 
 <!-- SIDEBAR -->
-
 <aside class="sidebar">
   <div class="sidebar-logo">
     <img src="logo.png" alt="AK Pack Fitness"/>
@@ -72,7 +69,6 @@
 </aside>
 
 <!-- MAIN -->
-
 <div class="main-wrapper">
   <div class="topbar">
     <div class="topbar-title">💪 Pack Training Plans</div>
@@ -86,87 +82,85 @@
 
   <main class="page-content">
 
-```
-<!-- ── MEMBER VIEW ── -->
-<div id="memberView">
-  <div class="id-lookup-card card">
-    <div class="section-title">🔍 Find Your Training Plan</div>
-    <div class="section-divider"></div>
-    <p style="font-size:0.85rem;color:var(--text-3);margin-bottom:18px">Enter your Member ID to view your personal workout plan prepared by your trainer.</p>
-    <div class="id-search-wrap">
-      <input class="form-input" id="memberIdInput" type="text" placeholder="MEMBER ID" autocomplete="off" autocapitalize="characters" spellcheck="false"/>
-      <button class="btn btn-primary btn-lg" onclick="lookupMemberPlan()">VIEW PLAN</button>
-    </div>
-    <div id="memberLookupMsg" class="hidden" style="margin-top:12px"></div>
-  </div>
-
-  <!-- Plan display -->
-  <div id="planDisplay" class="hidden mt-24">
-    <div class="card">
-      <div class="plan-header">
-        <div class="plan-member-info">
-          <h2 id="planMemberName">—</h2>
-          <div class="plan-member-id" id="planMemberId">—</div>
+    <!-- ── MEMBER VIEW ── -->
+    <div id="memberView">
+      <div class="id-lookup-card card">
+        <div class="section-title">🔍 Find Your Training Plan</div>
+        <div class="section-divider"></div>
+        <p style="font-size:0.85rem;color:var(--text-3);margin-bottom:18px">Enter your Member ID to view your personal workout plan prepared by your trainer.</p>
+        <div class="id-search-wrap">
+          <input class="form-input" id="memberIdInput" type="text" placeholder="MEMBER ID" autocomplete="off" autocapitalize="characters" spellcheck="false"/>
+          <button class="btn btn-primary btn-lg" onclick="lookupMemberPlan()">VIEW PLAN</button>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span id="planTypeBadge" class="plan-badge plan-custom">Custom Plan</span>
-          <button class="btn btn-secondary" onclick="resetMemberView()">← Back</button>
-        </div>
+        <div id="memberLookupMsg" class="hidden" style="margin-top:12px"></div>
       </div>
-      <div id="planDays"></div>
-    </div>
-  </div>
-</div>
 
-<!-- ── ADMIN VIEW ── -->
-<div id="adminView" class="hidden">
-
-  <!-- Password gate -->
-  <div id="adminGate" class="card" style="max-width:400px;margin:0 auto">
-    <div class="section-title">🔒 Trainer Access</div>
-    <div class="section-divider"></div>
-    <div class="form-group">
-      <label class="form-label">Admin Password</label>
-      <input class="form-input-sm" id="adminPassInput" type="password" placeholder="Enter password..." onkeydown="if(event.key==='Enter')checkAdminPass()"/>
-    </div>
-    <div id="adminPassError" class="alert alert-danger hidden"><span class="alert-icon">✖</span> Incorrect password.</div>
-    <button class="btn btn-primary btn-block mt-16" onclick="checkAdminPass()">Enter Admin Panel</button>
-  </div>
-
-  <!-- Admin panel -->
-  <div id="adminPanel" class="hidden">
-
-    <!-- Search member -->
-    <div class="card mb-24">
-      <div class="flex-between mb-16">
-        <div>
-          <div class="section-title">Manage Training Plans</div>
-          <div class="section-divider"></div>
+      <!-- Plan display -->
+      <div id="planDisplay" class="hidden mt-24">
+        <div class="card">
+          <div class="plan-header">
+            <div class="plan-member-info">
+              <h2 id="planMemberName">—</h2>
+              <div class="plan-member-id" id="planMemberId">—</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span id="planTypeBadge" class="plan-badge plan-custom">Custom Plan</span>
+              <button class="btn btn-secondary" onclick="resetMemberView()">← Back</button>
+            </div>
+          </div>
+          <div id="planDays"></div>
         </div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <input class="form-input-sm" id="adminMemberSearch" placeholder="Search by Member ID or Name..." style="flex:1;min-width:200px"/>
-        <button class="btn btn-secondary" onclick="adminSearchMember()">🔍 Search</button>
-        <button class="btn btn-primary" onclick="openAddPlanModal()">+ Add / Edit Plan</button>
-      </div>
-      <div id="adminSearchResult" class="mt-16"></div>
     </div>
 
-    <!-- All plans list -->
-    <div class="card">
-      <div class="flex-between mb-16">
-        <div>
-          <div class="section-title">All Training Plans</div>
-          <div class="section-divider"></div>
+    <!-- ── ADMIN VIEW ── -->
+    <div id="adminView" class="hidden">
+
+      <!-- Password gate -->
+      <div id="adminGate" class="card" style="max-width:400px;margin:0 auto">
+        <div class="section-title">🔒 Trainer Access</div>
+        <div class="section-divider"></div>
+        <div class="form-group">
+          <label class="form-label">Admin Password</label>
+          <input class="form-input-sm" id="adminPassInput" type="password" placeholder="Enter password..." onkeydown="if(event.key==='Enter')checkAdminPass()"/>
         </div>
-        <span id="planCountBadge" class="topbar-badge">0 Plans</span>
+        <div id="adminPassError" class="alert alert-danger hidden"><span class="alert-icon">✖</span> Incorrect password.</div>
+        <button class="btn btn-primary btn-block mt-16" onclick="checkAdminPass()">Enter Admin Panel</button>
       </div>
-      <div id="allPlansList"></div>
-    </div>
 
-  </div>
-</div>
-```
+      <!-- Admin panel -->
+      <div id="adminPanel" class="hidden">
+
+        <!-- Search member -->
+        <div class="card mb-24">
+          <div class="flex-between mb-16">
+            <div>
+              <div class="section-title">Manage Training Plans</div>
+              <div class="section-divider"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <input class="form-input-sm" id="adminMemberSearch" placeholder="Search by Member ID or Name..." style="flex:1;min-width:200px"/>
+            <button class="btn btn-secondary" onclick="adminSearchMember()">🔍 Search</button>
+            <button class="btn btn-primary" onclick="openAddPlanModal()">+ Add / Edit Plan</button>
+          </div>
+          <div id="adminSearchResult" class="mt-16"></div>
+        </div>
+
+        <!-- All plans list -->
+        <div class="card">
+          <div class="flex-between mb-16">
+            <div>
+              <div class="section-title">All Training Plans</div>
+              <div class="section-divider"></div>
+            </div>
+            <span id="planCountBadge" class="topbar-badge">0 Plans</span>
+          </div>
+          <div id="allPlansList"></div>
+        </div>
+
+      </div>
+    </div>
 
   </main>
 
@@ -176,7 +170,6 @@
 </div>
 
 <!-- ── ADD / EDIT PLAN MODAL ── -->
-
 <div id="planModal" class="modal-overlay hidden">
   <div class="modal-box" style="max-width:680px">
     <div class="modal-header">
@@ -185,52 +178,48 @@
     </div>
     <div class="modal-body" style="max-height:75vh;overflow-y:auto">
 
-```
-  <!-- Member info -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-    <div class="form-group-sm">
-      <label>Member ID</label>
-      <input class="form-input-sm" id="pmMemberId" placeholder="e.g. AK-001" autocapitalize="characters"/>
-    </div>
-    <div class="form-group-sm">
-      <label>Member Name</label>
-      <input class="form-input-sm" id="pmMemberName" placeholder="Full name"/>
-    </div>
-    <div class="form-group-sm">
-      <label>Plan Type</label>
-      <select class="form-input-sm" id="pmPlanType">
-        <option value="Custom">Custom</option>
-        <option value="Beginner">Beginner</option>
-        <option value="Intermediate">Intermediate</option>
-        <option value="Advanced">Advanced</option>
-      </select>
-    </div>
-    <div class="form-group-sm">
-      <label>Notes / Goal</label>
-      <input class="form-input-sm" id="pmGoal" placeholder="e.g. Weight loss, Muscle gain"/>
-    </div>
-  </div>
+      <!-- Member info -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="form-group-sm">
+          <label>Member ID</label>
+          <input class="form-input-sm" id="pmMemberId" placeholder="e.g. AK-001" autocapitalize="characters"/>
+        </div>
+        <div class="form-group-sm">
+          <label>Member Name</label>
+          <input class="form-input-sm" id="pmMemberName" placeholder="Full name"/>
+        </div>
+        <div class="form-group-sm">
+          <label>Plan Type</label>
+          <select class="form-input-sm" id="pmPlanType">
+            <option value="Custom">Custom</option>
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Advanced">Advanced</option>
+          </select>
+        </div>
+        <div class="form-group-sm">
+          <label>Notes / Goal</label>
+          <input class="form-input-sm" id="pmGoal" placeholder="e.g. Weight loss, Muscle gain"/>
+        </div>
+      </div>
 
-  <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:12px">
-    <div class="flex-between mb-16">
-      <div style="font-family:var(--font-heading);font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text)">Exercises</div>
-      <button class="btn btn-secondary" onclick="addExerciseRow()" style="padding:7px 14px;font-size:0.8rem">+ Add Exercise</button>
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:12px">
+        <div class="flex-between mb-16">
+          <div style="font-family:var(--font-heading);font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text)">Exercises</div>
+          <button class="btn btn-secondary" onclick="addExerciseRow()" style="padding:7px 14px;font-size:0.8rem">+ Add Exercise</button>
+        </div>
+        <div id="exerciseRows"></div>
+      </div>
+
     </div>
-    <div id="exerciseRows"></div>
-  </div>
-
-</div>
-<div class="modal-footer">
-  <button class="btn btn-ghost" onclick="closePlanModal()">Cancel</button>
-  <button class="btn btn-primary" onclick="savePlan()">💾 Save Plan</button>
-</div>
-```
-
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closePlanModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePlan()">💾 Save Plan</button>
+    </div>
   </div>
 </div>
 
 <!-- View plan modal (admin) -->
-
 <div id="viewPlanModal" class="modal-overlay hidden">
   <div class="modal-box" style="max-width:640px">
     <div class="modal-header">
@@ -247,7 +236,6 @@
 </div>
 
 <script src="script.js"></script>
-
 <script>
 document.getElementById('fyear').textContent = new Date().getFullYear();
 
@@ -586,6 +574,5 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
-
 </body>
 </html>

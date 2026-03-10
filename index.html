@@ -9,92 +9,197 @@
   <title>AK Pack Fitness — Check In</title>
   <link rel="stylesheet" href="style.css"/>
   <style>
-    /* ── NUMBER PAD ── */
-    .numpad-display {
-      background: var(--surface-3);
-      border: 2px solid var(--border-md);
-      border-radius: var(--radius);
-      padding: 18px 20px;
-      font-family: var(--font-display);
-      font-size: 3rem;
-      letter-spacing: 8px;
-      color: var(--text);
-      text-align: center;
-      min-height: 80px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 14px;
+
+    /* ══════════════════════════════════
+       MEMBER RESULT POPUP MODAL
+    ══════════════════════════════════ */
+    .result-overlay {
+      position: fixed; inset: 0; z-index: 600;
+      background: rgba(6, 8, 18, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+      animation: overlayIn 0.25s ease forwards;
+    }
+    @keyframes overlayIn { from{opacity:0} to{opacity:1} }
+
+    .result-modal {
+      background: linear-gradient(160deg, #151B2E, #1A2040);
+      border: 1.5px solid rgba(255,255,255,0.10);
+      border-radius: 22px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.05),
+                  0 24px 80px rgba(0,0,0,0.6),
+                  0 8px 32px rgba(0,0,0,0.4);
+      width: 100%; max-width: 480px;
+      overflow: hidden;
+      animation: modalIn 0.38s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
       position: relative;
-      transition: border-color 0.2s;
+    }
+    @keyframes modalIn {
+      from { opacity:0; transform: scale(0.82) translateY(30px); }
+      to   { opacity:1; transform: scale(1)    translateY(0px);  }
+    }
+
+    /* Colour bar top */
+    .result-modal-bar {
+      height: 4px; width: 100%;
+    }
+    .result-modal-bar.active  { background: linear-gradient(90deg,#22C55E,#4ADE80,#22C55E); }
+    .result-modal-bar.warning { background: linear-gradient(90deg,#F59E0B,#FCD34D,#F59E0B); }
+    .result-modal-bar.expired { background: linear-gradient(90deg,#E03030,#FF4040,#E03030); }
+    .result-modal-bar.exit    { background: linear-gradient(90deg,#3B82F6,#60A5FA,#3B82F6); }
+
+    .result-modal-inner { padding: 24px 24px 20px; }
+
+    /* Header row */
+    .result-modal-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; gap:12px; }
+    .result-modal-name { font-family: var(--font-display); font-size: clamp(1.8rem, 6vw, 2.8rem); letter-spacing: 3px; color: #fff; line-height: 1; }
+    .result-modal-id   { font-family: 'Courier New', monospace; font-size: 0.82rem; color: var(--rose-bright); letter-spacing: 2px; margin-top: 4px; }
+    .result-modal-close {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text-2); font-size: 1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all 0.2s;
+    }
+    .result-modal-close:hover { background: var(--rose-pale); color: var(--rose-bright); transform: rotate(90deg) scale(1.1); }
+
+    /* Info grid */
+    .result-info-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-bottom: 16px;
+    }
+    .result-info-cell {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px; padding: 12px 14px;
+    }
+    .result-info-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-3); margin-bottom: 4px; }
+    .result-info-value { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .result-days { font-family: var(--font-display); font-size: 1.9rem; letter-spacing: 2px; line-height: 1; }
+    .result-days.green  { color: #22C55E; text-shadow: 0 0 16px rgba(34,197,94,0.5); }
+    .result-days.yellow { color: #F59E0B; text-shadow: 0 0 16px rgba(245,158,11,0.5); }
+    .result-days.red    { color: #EF4444; text-shadow: 0 0 16px rgba(239,68,68,0.5); }
+
+    /* Alert bar */
+    .result-alert {
+      border-radius: 10px; padding: 11px 14px; margin-bottom: 14px;
+      font-size: 0.84rem; font-weight: 500;
+      display: flex; align-items: flex-start; gap: 9px;
+    }
+    .result-alert.danger  { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.25);  color: #EF4444; }
+    .result-alert.warning { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25); color: #F59E0B; }
+
+    /* Welcome section */
+    .result-welcome {
+      text-align: center; padding: 16px;
+      border-radius: 14px; margin-bottom: 16px;
+    }
+    .result-welcome.checkin { background: rgba(34,197,94,0.10); border: 1.5px solid rgba(34,197,94,0.22); }
+    .result-welcome.exit    { background: rgba(59,130,246,0.10); border: 1.5px solid rgba(59,130,246,0.22); }
+    .result-welcome-wolf { font-size: 2.6rem; margin-bottom: 6px; animation: wolfBounce 0.6s cubic-bezier(0.34,1.7,0.64,1); }
+    @keyframes wolfBounce { from{transform:scale(0) rotate(-20deg)} to{transform:scale(1) rotate(0deg)} }
+    .result-welcome-title { font-family: var(--font-heading); font-size: clamp(1rem,3.5vw,1.4rem); font-weight: 800; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+    .result-welcome.checkin .result-welcome-title { color: #22C55E; }
+    .result-welcome.exit    .result-welcome-title { color: #60A5FA; }
+    .result-welcome-msg { font-size: clamp(0.82rem,2.5vw,0.94rem); line-height: 1.55; opacity: 0.85; }
+    .result-welcome.checkin .result-welcome-msg { color: #4ADE80; }
+    .result-welcome.exit    .result-welcome-msg { color: #93C5FD; }
+
+    /* Countdown bar at bottom of modal */
+    .result-countdown {
+      padding: 0 24px 18px;
+    }
+    .result-countdown-track { height: 3px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow:hidden; }
+    .result-countdown-fill  { height: 100%; border-radius: 99px; width: 100%; }
+    .result-countdown-fill.checkin { background: linear-gradient(90deg,#22C55E,#4ADE80); }
+    .result-countdown-fill.exit    { background: linear-gradient(90deg,#3B82F6,#60A5FA); }
+    .result-countdown-fill.expired { background: linear-gradient(90deg,#E03030,#FF4040); }
+    .result-countdown-label { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-3); text-align: center; margin-top: 6px; }
+
+    /* Error toast (small, non-blocking) */
+    .toast-error {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      z-index: 700; background: #1A0A0A; border: 1.5px solid rgba(239,68,68,0.4);
+      border-radius: 12px; padding: 12px 20px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.86rem; font-weight: 500; color: #EF4444;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      animation: toastIn 0.3s cubic-bezier(0.34,1.4,0.64,1);
+      white-space: nowrap; max-width: 90vw;
+    }
+    @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+    /* ══════════════════════════════════
+       NUMBER PAD
+    ══════════════════════════════════ */
+    .numpad-display {
+      background: var(--surface-3); border: 2px solid var(--border-md);
+      border-radius: var(--radius); padding: 18px 20px;
+      font-family: var(--font-display); font-size: 3rem; letter-spacing: 8px;
+      color: var(--text); text-align: center; min-height: 80px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px; transition: border-color 0.2s, box-shadow 0.2s;
       word-break: break-all;
     }
     .numpad-display.active { border-color: var(--rose); box-shadow: 0 0 0 3px var(--rose-glow); }
-    .numpad-display-placeholder { color: var(--text-3); font-size: 1.2rem; letter-spacing: 3px; font-family: var(--font-body); font-weight: 400; }
-    .numpad-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 12px;
-    }
+    .numpad-display-placeholder { color: var(--text-3); font-size: 1.1rem; letter-spacing: 3px; font-family: var(--font-body); font-weight: 400; }
+    .numpad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
     .numpad-key {
-      background: var(--surface-2);
-      border: 1.5px solid var(--border-md);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: var(--font-display);
-      font-size: 2rem;
-      letter-spacing: 1px;
-      padding: 20px 10px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s cubic-bezier(0.34,1.4,0.64,1);
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-      line-height: 1;
+      background: var(--surface-2); border: 1.5px solid var(--border-md);
+      border-radius: var(--radius); color: var(--text); font-family: var(--font-display);
+      font-size: 2rem; letter-spacing: 1px; padding: 20px 10px; cursor: pointer;
+      text-align: center; transition: all 0.15s cubic-bezier(0.34,1.4,0.64,1);
+      user-select: none; -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation; line-height: 1;
     }
     .numpad-key:hover  { background: var(--surface-3); border-color: var(--border-lg); transform: scale(1.04); }
-    .numpad-key:active { transform: scale(0.93); background: var(--glass-hover); }
-    .numpad-key.key-clear  { background: var(--surface-3); color: var(--yellow); border-color: var(--yellow-border); font-size: 1.3rem; font-family: var(--font-heading); letter-spacing: 2px; }
-    .numpad-key.key-clear:hover  { background: var(--yellow-bg); }
-    .numpad-key.key-enter  { background: linear-gradient(135deg,var(--rose),var(--rose-bright)); color: #fff; border-color: transparent; box-shadow: 0 4px 18px var(--rose-glow-md); font-size: 1.5rem; }
-    .numpad-key.key-enter:hover  { box-shadow: 0 6px 28px var(--rose-glow-md); transform: scale(1.05); }
-    .numpad-key.key-exit   { background: linear-gradient(135deg,#3B0DAA,#6B3BF0); color: #fff; border-color: transparent; box-shadow: 0 4px 18px rgba(107,59,240,0.35); font-size: 1.5rem; }
-    .numpad-key.key-exit:hover   { box-shadow: 0 6px 28px rgba(107,59,240,0.5); transform: scale(1.05); }
+    .numpad-key:active { transform: scale(0.91); background: var(--glass-hover); }
+    .numpad-key.key-clear { background: var(--surface-3); color: var(--yellow); border-color: var(--yellow-border); font-size: 1.2rem; font-family: var(--font-heading); letter-spacing: 2px; }
+    .numpad-key.key-clear:hover { background: var(--yellow-bg); }
+    .numpad-key.key-enter { background: linear-gradient(135deg,var(--rose),var(--rose-bright)); color:#fff; border-color:transparent; box-shadow:0 4px 18px var(--rose-glow-md); font-size:1.5rem; }
+    .numpad-key.key-enter:hover { box-shadow:0 6px 28px var(--rose-glow-md); transform:scale(1.05); }
+    .numpad-key.key-exit  { background: linear-gradient(135deg,#3B0DAA,#6B3BF0); color:#fff; border-color:transparent; box-shadow:0 4px 18px rgba(107,59,240,0.35); font-size:1.5rem; }
+    .numpad-key.key-exit:hover { box-shadow:0 6px 28px rgba(107,59,240,0.5); transform:scale(1.05); }
     .numpad-key.key-del { font-size: 1.5rem; color: var(--text-2); }
 
-    /* ── LAYOUT ── */
+    /* ══════════════════════════════════
+       LAYOUT
+    ══════════════════════════════════ */
     .terminal-wrap { display:flex; flex-direction:column; align-items:center; padding:4px 0 32px; }
     .input-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; width:100%; max-width:440px; box-shadow:var(--shadow-md); position:relative; overflow:hidden; }
     .input-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--rose),var(--rose-bright),transparent); }
     .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:100%; max-width:960px; margin-bottom:16px; }
     .graph-section { width:100%; max-width:960px; }
-    .countdown-wrap { width:100%; max-width:440px; margin-top:10px; text-align:center; }
-    .countdown-bar-track { height:2px; background:var(--surface-3); border-radius:99px; overflow:hidden; margin-top:5px; }
-    .countdown-bar-fill { height:100%; background:linear-gradient(90deg,var(--rose),var(--rose-bright)); width:100%; transition:width 5s linear; border-radius:99px; }
     .mode-label { font-size:0.65rem; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--text-3); margin-bottom:10px; text-align:center; }
 
-    /* ── WELCOME BANNER ── */
-    .welcome-banner { text-align:center; padding:14px 16px; margin-top:13px; background:var(--green-bg); border:1.5px solid var(--green-border); border-radius:var(--radius-sm); animation:bannerPop 0.45s cubic-bezier(0.34,1.56,0.64,1); }
-    .welcome-wolf { font-size:2.4rem; margin-bottom:4px; }
-    .welcome-banner h2 { font-family:var(--font-heading); font-size:clamp(0.9rem,3vw,1.3rem); font-weight:800; letter-spacing:3px; color:var(--green); text-transform:uppercase; margin-bottom:5px; }
-    .pack-msg { font-size:clamp(0.82rem,2.5vw,0.96rem); color:var(--green); opacity:0.85; line-height:1.5; }
-    @keyframes bannerPop{0%{opacity:0;transform:scale(0.92)}60%{transform:scale(1.03)}100%{opacity:1;transform:scale(1)}}
+    /* Loading spinner inside modal */
+    .modal-loading {
+      position: fixed; inset:0; z-index:600;
+      background: rgba(6,8,18,0.75); backdrop-filter:blur(12px);
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+      animation: overlayIn 0.2s ease;
+    }
+    .modal-loading-text { font-family:var(--font-heading); font-size:1rem; font-weight:700; letter-spacing:4px; text-transform:uppercase; color:var(--text-2); }
 
     @media(max-width:600px){
       .stats-row { grid-template-columns:1fr 1fr; }
       .input-card { padding:14px; }
       .numpad-key { padding:16px 8px; font-size:1.7rem; }
-      .numpad-key.key-clear, .numpad-key.key-del { font-size:1.1rem; }
+      .numpad-key.key-clear,.numpad-key.key-del { font-size:1.1rem; }
       .numpad-display { font-size:2.4rem; min-height:66px; padding:14px; }
       .numpad-grid { gap:8px; }
+      .result-modal { border-radius: 20px 20px 0 0; }
+      .result-overlay { align-items: flex-end; padding:0; }
+      .result-info-grid { grid-template-columns: 1fr 1fr; }
+      .result-modal-inner { padding:18px 18px 14px; }
     }
   </style>
 </head>
 <body>
 
-<!-- SIDEBAR (desktop/tablet) -->
+<!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo" id="logoTapArea">
     <img src="logo.png" alt="AK Pack Fitness"/>
@@ -116,7 +221,7 @@
   </div>
 </aside>
 
-<!-- BOTTOM NAV (mobile) -->
+<!-- BOTTOM NAV -->
 <nav class="bottom-nav">
   <div class="bottom-nav-inner">
     <a href="index.html" class="bottom-nav-item active"><span class="bnav-icon">🏋️</span><span>Check In</span></a>
@@ -126,7 +231,7 @@
   </div>
 </nav>
 
-<!-- ADMIN LOGIN OVERLAY -->
+<!-- ADMIN LOGIN -->
 <div id="adminLoginOverlay" class="config-overlay hidden">
   <div class="config-box" style="max-width:360px">
     <div class="config-title">🔒 Admin Access</div>
@@ -154,7 +259,7 @@
   <main class="page-content">
     <div class="terminal-wrap">
 
-      <!-- FLOATING CUBES -->
+      <!-- CUBES -->
       <div class="cube-row" style="width:100%;max-width:680px">
         <div class="cube-btn active-checkin" id="cubeCheckin" onclick="setMode('checkin')">
           <span class="cube-btn-icon">🏋️</span>
@@ -173,20 +278,14 @@
         </div>
       </div>
 
-      <!-- NUMBER PAD CARD -->
+      <!-- NUMBER PAD -->
       <div class="input-card mt-16">
         <div class="mode-label" id="modeLabel">ENTER MEMBER ID — CHECK IN</div>
-
-        <!-- Display -->
         <div class="numpad-display" id="numpadDisplay">
           <span class="numpad-display-placeholder" id="numpadPlaceholder">TAP NUMBERS BELOW</span>
           <span id="numpadValue" style="display:none"></span>
         </div>
-
-        <!-- Hidden input for compatibility -->
         <input type="hidden" id="memberIdInput"/>
-
-        <!-- Number Grid -->
         <div class="numpad-grid">
           <button class="numpad-key" onclick="numpadPress('1')">1</button>
           <button class="numpad-key" onclick="numpadPress('2')">2</button>
@@ -201,37 +300,14 @@
           <button class="numpad-key" onclick="numpadPress('0')">0</button>
           <button class="numpad-key key-del" onclick="numpadDelete()">⌫</button>
         </div>
-
-        <!-- Action Buttons -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <button class="numpad-key key-enter" onclick="numpadSubmit()">✓ CHECK IN</button>
-          <button class="numpad-key key-exit"  id="exitActionBtn" onclick="numpadSubmitExit()">🚪 EXIT</button>
+          <button class="numpad-key key-exit"  onclick="numpadSubmitExit()">🚪 EXIT</button>
         </div>
       </div>
 
-      <!-- Loading -->
-      <div id="loadingSpinner" class="hidden mt-16" style="width:100%;max-width:440px;text-align:center">
-        <div class="spinner"></div>
-        <p style="font-size:0.72rem;color:var(--text-3);margin-top:4px;letter-spacing:2px;text-transform:uppercase">Searching...</p>
-      </div>
-
-      <!-- Messages -->
-      <div id="terminalMessage" class="hidden" style="width:100%;max-width:440px;margin-top:10px"></div>
-
-      <!-- Member Result -->
-      <div id="memberResult" class="hidden mt-16" style="width:100%;max-width:580px"></div>
-
-      <!-- Countdown -->
-      <div id="autoResetBar" class="countdown-wrap hidden">
-        <p style="font-size:0.66rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-3)">
-          Resetting in <span id="countdownNum" style="font-weight:700;color:var(--text-2)">5</span>s ·
-          <span style="text-decoration:underline;cursor:pointer;color:var(--rose-bright)" onclick="stopAutoReset()">Cancel</span>
-        </p>
-        <div class="countdown-bar-track"><div id="countdownBar" class="countdown-bar-fill"></div></div>
-      </div>
-
       <!-- DIVIDER -->
-      <div style="width:100%;max-width:960px;border-top:1px solid var(--border);margin:24px 0 18px"></div>
+      <div style="width:100%;max-width:960px;border-top:1px solid var(--border);margin:28px 0 18px"></div>
 
       <!-- STATS -->
       <div class="stats-row">
@@ -287,80 +363,53 @@
 <script src="script.js"></script>
 <script>
 document.getElementById('fyear').textContent = new Date().getFullYear();
-
-// Clock
 function updateClock(){ document.getElementById('clockDisplay').textContent = nowTime(); }
 setInterval(updateClock,1000); updateClock();
 
 // ── NUMBER PAD ────────────────────────────────────────────────
 let numpadCurrent = '';
-const MAX_DIGITS   = 6;
+const MAX_DIGITS  = 6;
 
-function numpadPress(digit) {
-  stopAutoReset();
-  if (numpadCurrent.length >= MAX_DIGITS) return;
-  numpadCurrent += digit;
-  updateNumpadDisplay();
+function numpadPress(d){ if(numpadCurrent.length>=MAX_DIGITS)return; numpadCurrent+=d; updateNumpadDisplay(); }
+function numpadDelete(){ numpadCurrent=numpadCurrent.slice(0,-1); updateNumpadDisplay(); }
+function numpadClear() { numpadCurrent=''; updateNumpadDisplay(); }
+function updateNumpadDisplay(){
+  const disp=document.getElementById('numpadDisplay');
+  const ph  =document.getElementById('numpadPlaceholder');
+  const val =document.getElementById('numpadValue');
+  document.getElementById('memberIdInput').value=numpadCurrent;
+  if(numpadCurrent){ ph.style.display='none'; val.style.display='block'; val.textContent=numpadCurrent; disp.classList.add('active'); }
+  else             { ph.style.display='block'; val.style.display='none'; disp.classList.remove('active'); }
 }
-function numpadDelete() {
-  stopAutoReset();
-  numpadCurrent = numpadCurrent.slice(0,-1);
-  updateNumpadDisplay();
+function numpadSubmit(){
+  if(!requireConfig())return;
+  if(!numpadCurrent){showToastError('Please enter your Member ID.');return;}
+  handleCheckIn(numpadCurrent);
 }
-function numpadClear() {
-  stopAutoReset();
-  numpadCurrent = '';
-  updateNumpadDisplay();
-  clearResult();
-}
-function updateNumpadDisplay() {
-  const disp  = document.getElementById('numpadDisplay');
-  const ph    = document.getElementById('numpadPlaceholder');
-  const val   = document.getElementById('numpadValue');
-  const input = document.getElementById('memberIdInput');
-  if (numpadCurrent) {
-    ph.style.display  = 'none';
-    val.style.display = 'block';
-    val.textContent   = numpadCurrent;
-    disp.classList.add('active');
-  } else {
-    ph.style.display  = 'block';
-    val.style.display = 'none';
-    disp.classList.remove('active');
-  }
-  input.value = numpadCurrent;
-}
-function numpadSubmit() {
-  if (!requireConfig()) return;
-  if (!numpadCurrent) { showTerminalMessage('Please enter your Member ID.','warning'); return; }
-  setMode('checkin');
-  handleCheckIn(numpadCurrent).then(()=>startAutoReset());
-}
-function numpadSubmitExit() {
-  if (!requireConfig()) return;
-  if (!numpadCurrent) { showTerminalMessage('Please enter your Member ID.','warning'); return; }
-  setMode('exit');
-  handleExitMember(numpadCurrent).then(()=>startAutoReset());
+function numpadSubmitExit(){
+  if(!requireConfig())return;
+  if(!numpadCurrent){showToastError('Please enter your Member ID.');return;}
+  handleExitMember(numpadCurrent);
 }
 
-// Support physical keyboard too
-document.addEventListener('keydown', (e) => {
-  if (e.target.tagName==='INPUT'&&e.target.type!=='hidden') return;
-  if (e.key>='0'&&e.key<='9') numpadPress(e.key);
-  else if (e.key==='Backspace') numpadDelete();
-  else if (e.key==='Enter') numpadSubmit();
-  else if (e.key==='Escape') numpadClear();
-  else if (e.key==='Delete') numpadClear();
+// Physical keyboard support
+document.addEventListener('keydown',(e)=>{
+  if(e.target.tagName==='INPUT'&&e.target.type!=='hidden') return;
+  if(document.querySelector('.result-overlay')||document.querySelector('.modal-loading')) return;
+  if(e.key>='0'&&e.key<='9') numpadPress(e.key);
+  else if(e.key==='Backspace') numpadDelete();
+  else if(e.key==='Enter') numpadSubmit();
+  else if(e.key==='Escape'||e.key==='Delete') numpadClear();
 });
 
 // ── MODE ──────────────────────────────────────────────────────
-let currentMode = 'checkin';
-function setMode(mode) {
-  currentMode = mode;
-  const ci = document.getElementById('cubeCheckin');
-  const ex = document.getElementById('cubeExit');
-  const ml = document.getElementById('modeLabel');
-  if (mode==='checkin') {
+let currentMode='checkin';
+function setMode(mode){
+  currentMode=mode;
+  const ci=document.getElementById('cubeCheckin');
+  const ex=document.getElementById('cubeExit');
+  const ml=document.getElementById('modeLabel');
+  if(mode==='checkin'){
     ci.className='cube-btn active-checkin'; ex.className='cube-btn dimmed';
     ml.textContent='ENTER MEMBER ID — CHECK IN';
     document.getElementById('topbarTitle').textContent='🐺 Check In Terminal';
@@ -371,62 +420,215 @@ function setMode(mode) {
   }
 }
 
-// ── EXIT HANDLER ──────────────────────────────────────────────
-async function handleExitMember(rawId) {
-  const id=rawId.trim();
-  if(!id){showTerminalMessage('Please enter a Member ID.','warning');return;}
-  showLoading(true); clearResult();
-  try {
-    const row=await lookupMember(id);
-    if(!row){showLoading(false);showTerminalMessage(`Member ID "${id}" not found.`,'danger');return;}
-    const member={memberID:row['MemberID']||row['Member ID']||id,name:row['Name']||row['name']||'Unknown'};
-    const exitTime=nowTime();
-    try{await writeRow('Attendance',[today(),exitTime,member.memberID,member.name,'EXIT']);}catch(e){}
-    showLoading(false);
-    const firstName=getFirstName(member.name);
-    const packMsg=getPackMessage(firstName,'exit');
-    const el=document.getElementById('memberResult');
-    el.innerHTML=`<div class="member-result"><div class="member-card" style="text-align:center">
-      <div style="font-size:2.4rem;margin-bottom:8px">👋</div>
-      <div class="member-card-name">${member.name.toUpperCase()}</div>
-      <div class="member-card-id">ID: ${member.memberID}</div>
-      <div style="display:inline-block;background:var(--blue-bg);border:1.5px solid var(--blue-border);border-radius:var(--radius-sm);padding:10px 24px;margin:10px 0">
-        <div class="member-info-label">Exit Recorded</div>
-        <div style="font-family:var(--font-display);font-size:1.8rem;letter-spacing:3px;color:var(--blue)">${exitTime}</div>
-      </div>
-      <div class="welcome-banner" style="background:var(--blue-bg);border-color:var(--blue-border)">
-        <div class="welcome-wolf">🐺</div>
-        <h2 style="color:var(--blue)">SEE YOU SOON, ${firstName.toUpperCase()}!</h2>
-        <p class="pack-msg" style="color:var(--blue)">${packMsg}</p>
-      </div>
-    </div></div>`;
-    el.classList.remove('hidden');
-    loadStats();
-  }catch(err){showLoading(false);showTerminalMessage(`Error: ${err.message}`,'danger');}
+// ── TOAST ERROR (small non-blocking) ─────────────────────────
+let toastTimer=null;
+function showToastError(msg){
+  document.querySelector('.toast-error')?.remove();
+  clearTimeout(toastTimer);
+  const t=document.createElement('div');
+  t.className='toast-error';
+  t.innerHTML=`<span>🚫</span><span>${msg}</span>`;
+  document.body.appendChild(t);
+  toastTimer=setTimeout(()=>t.remove(),3500);
 }
 
-// ── AUTO RESET ────────────────────────────────────────────────
-let autoResetTimer=null,cdInterval=null;
-function startAutoReset(){
+// ── LOADING OVERLAY ───────────────────────────────────────────
+function showLoadingOverlay(show){
+  document.querySelector('.modal-loading')?.remove();
+  if(!show) return;
+  const el=document.createElement('div');
+  el.className='modal-loading';
+  el.innerHTML=`<div class="spinner" style="width:40px;height:40px;border-width:4px"></div><div class="modal-loading-text">Searching...</div>`;
+  document.body.appendChild(el);
+}
+
+// ── RESULT MODAL ──────────────────────────────────────────────
+let autoResetTimer=null, cdInterval=null;
+
+function showResultModal(html, type='checkin'){
+  closeResultModal();
+  const overlay=document.createElement('div');
+  overlay.className='result-overlay';
+  overlay.id='resultOverlay';
+  overlay.innerHTML=html;
+  document.body.appendChild(overlay);
+  // Close on backdrop click
+  overlay.addEventListener('click',(e)=>{ if(e.target===overlay) closeResultModal(); });
+  // Start auto countdown
+  startAutoReset(type);
+}
+
+function closeResultModal(){
   stopAutoReset();
-  let secs=5;
-  document.getElementById('autoResetBar').classList.remove('hidden');
-  document.getElementById('countdownNum').textContent=secs;
-  const bar=document.getElementById('countdownBar');
-  bar.style.transition='none';bar.style.width='100%';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{bar.style.transition='width 5s linear';bar.style.width='0%';}));
-  cdInterval=setInterval(()=>{secs--;document.getElementById('countdownNum').textContent=secs;},1000);
-  autoResetTimer=setTimeout(()=>fullReset(),5000);
+  const ov=document.getElementById('resultOverlay');
+  if(ov){
+    ov.style.transition='opacity 0.25s ease';
+    ov.style.opacity='0';
+    setTimeout(()=>ov.remove(),250);
+  }
+  numpadClear();
+  setMode('checkin');
+  loadStats();
+}
+
+function startAutoReset(type='checkin'){
+  stopAutoReset();
+  let secs=6;
+  const bar=document.getElementById('resultCountdownFill');
+  const label=document.getElementById('resultCountdownLabel');
+  if(bar){ bar.style.transition='none'; bar.style.width='100%'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ bar.style.transition=`width ${secs}s linear`; bar.style.width='0%'; })); }
+  if(label) label.textContent=`Closing in ${secs}s · tap anywhere to close`;
+  cdInterval=setInterval(()=>{
+    secs--;
+    if(label) label.textContent=`Closing in ${secs}s · tap anywhere to close`;
+  },1000);
+  autoResetTimer=setTimeout(()=>closeResultModal(),secs*1000);
 }
 function stopAutoReset(){
-  clearTimeout(autoResetTimer);clearInterval(cdInterval);
+  clearTimeout(autoResetTimer); clearInterval(cdInterval);
   autoResetTimer=cdInterval=null;
-  document.getElementById('autoResetBar').classList.add('hidden');
 }
-function fullReset(){
-  stopAutoReset(); clearResult();
-  numpadCurrent=''; updateNumpadDisplay();
-  setMode('checkin');
+
+// ── CHECK IN HANDLER ──────────────────────────────────────────
+async function handleCheckIn(memberId){
+  showLoadingOverlay(true);
+  try{
+    const row=await lookupMember(memberId);
+    showLoadingOverlay(false);
+    if(!row){ showToastError(`Member ID "${memberId}" not found. Please contact reception.`); return; }
+
+    const member={
+      memberID:   row['MemberID']  ||row['Member ID'] ||memberId,
+      name:       row['Name']      ||row['name']       ||'Unknown',
+      phone:      row['Phone']     ||row['phone']      ||'',
+      startDate:  parseDate(row['StartDate'] ||row['Start Date'] ||row['startdate'] ||''),
+      expiryDate: parseDate(row['ExpiryDate']||row['Expiry Date']||row['expirydate']||'')
+    };
+    const days       = daysRemaining(member.expiryDate);
+    const statusType = getMembershipStatus(days);
+    const statusLabel= statusType==='Warning'?'Active':statusType;
+
+    try{ await recordAttendance(member,statusLabel); }catch(e){ console.warn('Write failed:',e); }
+
+    const daysClass  = days>3?'green':days>=0?'yellow':'red';
+    const daysDisplay= days<0?`${Math.abs(days)} DAYS OVERDUE`:days===0?'EXPIRES TODAY':`${days} DAYS LEFT`;
+    const barClass   = statusType==='Active'?'active':statusType==='Warning'?'warning':'expired';
+
+    let alertHtml='';
+    if(statusType==='Expired') alertHtml=`<div class="result-alert danger"><span>🚫</span><span>MEMBERSHIP EXPIRED — Please renew at reception.</span></div>`;
+    else if(days<=3){ const m=days===0?'expires TODAY':days===1?'expires TOMORROW':`expires in ${days} days`; alertHtml=`<div class="result-alert warning"><span>⚠️</span><span>Membership ${m}. Please renew soon.</span></div>`; }
+
+    const firstName = getFirstName(member.name);
+    const packMsg   = statusType!=='Expired'?getPackMessage(firstName,'checkin'):'';
+    const welcomeHtml = statusType!=='Expired'
+      ? `<div class="result-welcome checkin">
+          <div class="result-welcome-wolf">🐺</div>
+          <div class="result-welcome-title">Welcome to the Pack!</div>
+          <div class="result-welcome-msg">${packMsg}</div>
+        </div>`
+      : `<div class="result-welcome" style="background:rgba(239,68,68,0.08);border:1.5px solid rgba(239,68,68,0.2)">
+          <div class="result-welcome-wolf">🚫</div>
+          <div class="result-welcome-title" style="color:#EF4444">Membership Expired</div>
+          <div class="result-welcome-msg" style="color:#FCA5A5">Please renew your membership at reception to continue.</div>
+        </div>`;
+
+    showResultModal(`
+      <div class="result-modal">
+        <div class="result-modal-bar ${barClass}"></div>
+        <div class="result-modal-inner">
+          <div class="result-modal-header">
+            <div>
+              <div class="result-modal-name">${member.name.toUpperCase()}</div>
+              <div class="result-modal-id">ID: ${member.memberID}</div>
+            </div>
+            <button class="result-modal-close" onclick="closeResultModal()">✕</button>
+          </div>
+          <div class="result-info-grid">
+            <div class="result-info-cell">
+              <div class="result-info-label">Start Date</div>
+              <div class="result-info-value">${formatDate(member.startDate)}</div>
+            </div>
+            <div class="result-info-cell">
+              <div class="result-info-label">Expiry Date</div>
+              <div class="result-info-value">${formatDate(member.expiryDate)}</div>
+            </div>
+            <div class="result-info-cell">
+              <div class="result-info-label">Days Remaining</div>
+              <div class="result-days ${daysClass}">${daysDisplay}</div>
+            </div>
+            <div class="result-info-cell">
+              <div class="result-info-label">Phone</div>
+              <div class="result-info-value">${member.phone||'—'}</div>
+            </div>
+          </div>
+          ${alertHtml}
+          ${welcomeHtml}
+        </div>
+        <div class="result-countdown">
+          <div class="result-countdown-track">
+            <div class="result-countdown-fill ${barClass}" id="resultCountdownFill"></div>
+          </div>
+          <div class="result-countdown-label" id="resultCountdownLabel">Closing in 6s · tap anywhere to close</div>
+        </div>
+      </div>`, barClass);
+
+  }catch(err){
+    showLoadingOverlay(false);
+    showToastError(`Error: ${err.message}`);
+    console.error(err);
+  }
+}
+
+// ── EXIT HANDLER ──────────────────────────────────────────────
+async function handleExitMember(memberId){
+  showLoadingOverlay(true);
+  try{
+    const row=await lookupMember(memberId);
+    showLoadingOverlay(false);
+    if(!row){ showToastError(`Member ID "${memberId}" not found.`); return; }
+
+    const member={memberID:row['MemberID']||row['Member ID']||memberId, name:row['Name']||row['name']||'Unknown'};
+    const exitTime=nowTime();
+    try{ await writeRow('Attendance',[today(),exitTime,member.memberID,member.name,'EXIT']); }catch(e){}
+
+    const firstName=getFirstName(member.name);
+    const packMsg  =getPackMessage(firstName,'exit');
+
+    showResultModal(`
+      <div class="result-modal">
+        <div class="result-modal-bar exit"></div>
+        <div class="result-modal-inner">
+          <div class="result-modal-header">
+            <div>
+              <div class="result-modal-name">${member.name.toUpperCase()}</div>
+              <div class="result-modal-id">ID: ${member.memberID}</div>
+            </div>
+            <button class="result-modal-close" onclick="closeResultModal()">✕</button>
+          </div>
+          <div class="result-info-grid">
+            <div class="result-info-cell" style="grid-column:1/-1;text-align:center">
+              <div class="result-info-label">Exit Time Recorded</div>
+              <div style="font-family:var(--font-display);font-size:2.2rem;letter-spacing:4px;color:#60A5FA;text-shadow:0 0 20px rgba(96,165,250,0.4)">${exitTime}</div>
+            </div>
+          </div>
+          <div class="result-welcome exit">
+            <div class="result-welcome-wolf">🐺</div>
+            <div class="result-welcome-title">See you soon, ${firstName}!</div>
+            <div class="result-welcome-msg">${packMsg}</div>
+          </div>
+        </div>
+        <div class="result-countdown">
+          <div class="result-countdown-track">
+            <div class="result-countdown-fill exit" id="resultCountdownFill"></div>
+          </div>
+          <div class="result-countdown-label" id="resultCountdownLabel">Closing in 6s · tap anywhere to close</div>
+        </div>
+      </div>`, 'exit');
+
+  }catch(err){
+    showLoadingOverlay(false);
+    showToastError(`Error: ${err.message}`);
+  }
 }
 
 // ── STATS & GRAPH ─────────────────────────────────────────────
@@ -438,22 +640,18 @@ async function loadStats(){
     const todayRows=rows.filter(r=>(r['Date']||r['date']||'').trim()===todayStr);
     const checkIns=todayRows.filter(r=>(r['Status']||r['status']||'')!=='EXIT');
     const exits   =todayRows.filter(r=>(r['Status']||r['status']||'')==='EXIT');
-    const inside  =Math.max(0,checkIns.length-exits.length);
-    document.getElementById('liveCount').textContent=checkIns.length;
-    document.getElementById('statCheckIns').textContent=checkIns.length;
-    document.getElementById('statExits').textContent=exits.length;
-    document.getElementById('statInside').textContent=inside;
+    document.getElementById('liveCount').textContent    =checkIns.length;
+    document.getElementById('statCheckIns').textContent =checkIns.length;
+    document.getElementById('statExits').textContent    =exits.length;
+    document.getElementById('statInside').textContent   =Math.max(0,checkIns.length-exits.length);
     graphData={};
     rows.forEach(r=>{
       const date=(r['Date']||r['date']||'').trim();
       const timeStr=(r['Time']||r['time']||'').trim();
-      const status=(r['Status']||r['status']||'').trim();
-      if(!date||!timeStr) return;
+      if(!date||!timeStr||(r['Status']||r['status']||'')==='EXIT') return;
       if(!graphData[date])graphData[date]={};
       const hour=parseInt(timeStr.split(':')[0]);
-      if(isNaN(hour)) return;
-      if(!graphData[date][hour])graphData[date][hour]=0;
-      if(status!=='EXIT')graphData[date][hour]++;
+      if(!isNaN(hour)){ if(!graphData[date][hour])graphData[date][hour]=0; graphData[date][hour]++; }
     });
     const todayHours=graphData[todayStr]||{};
     const maxCount=Math.max(...Object.values(todayHours),0);
@@ -464,14 +662,12 @@ async function loadStats(){
 }
 function buildDaySelector(){
   const dates=[...new Set([today(),...Object.keys(graphData).sort().reverse()])].slice(0,7);
-  const sel=document.getElementById('daySelector');
-  sel.innerHTML=dates.map(d=>{
-    const parts=d.split('/');
-    const label=parts.length===3?`${parts[0]}/${parts[1]}`:d;
+  document.getElementById('daySelector').innerHTML=dates.map(d=>{
+    const p=d.split('/'); const label=p.length===3?`${p[0]}/${p[1]}`:d;
     return `<button class="day-pill ${d===selectedDay?'active':''}" onclick="selectDay('${d}')">${label}</button>`;
   }).join('');
 }
-function selectDay(date){selectedDay=date;buildDaySelector();renderGraph(date);}
+function selectDay(d){selectedDay=d;buildDaySelector();renderGraph(d);}
 function renderGraph(date){
   const barsEl=document.getElementById('chartBars');
   const hours=graphData[date]||{};
@@ -479,8 +675,7 @@ function renderGraph(date){
   const maxVal=Math.max(...allHours.map(h=>hours[h]||0),1);
   const peakVal=Math.max(...Object.values(hours),0);
   barsEl.innerHTML=allHours.map(h=>{
-    const val=hours[h]||0;
-    const pct=Math.round((val/maxVal)*100);
+    const val=hours[h]||0; const pct=Math.round((val/maxVal)*100);
     const isPeak=val===peakVal&&val>0;
     const label=h<12?`${h}am`:h===12?'12pm':`${h-12}pm`;
     return `<div class="chart-bar-wrap">
@@ -493,12 +688,23 @@ function renderGraph(date){
   }).join('');
 }
 
+// ── MIDNIGHT RESET ────────────────────────────────────────────
+let lastKnownDate=today();
+function checkMidnightReset(){
+  const now=today();
+  if(now!==lastKnownDate){
+    lastKnownDate=now; selectedDay=now; graphData={};
+    ['liveCount','statCheckIns','statExits','statInside'].forEach(id=>document.getElementById(id).textContent='0');
+    document.getElementById('statPeakHour').textContent='—';
+    loadStats();
+  }
+}
+
 // ── ADMIN LOGIN ───────────────────────────────────────────────
 const ADMIN_PASSWORD='akpack2025';
 let logoTaps=0,logoTimer;
 document.getElementById('logoTapArea')?.addEventListener('click',()=>{
-  logoTaps++;clearTimeout(logoTimer);
-  logoTimer=setTimeout(()=>logoTaps=0,3000);
+  logoTaps++;clearTimeout(logoTimer);logoTimer=setTimeout(()=>logoTaps=0,3000);
   if(logoTaps>=5){logoTaps=0;openAdminLogin();}
 });
 function openAdminLogin(){
@@ -522,7 +728,7 @@ function checkAdminPassword(){
       <button class="btn btn-ghost btn-block" onclick="document.getElementById('adminMenuOv').remove()">Close</button>
     </div>`;
     document.body.appendChild(ov);
-  } else {
+  }else{
     document.getElementById('adminLoginError').classList.remove('hidden');
     document.getElementById('adminPasswordInput').value='';
     document.getElementById('adminPasswordInput').focus();
@@ -531,9 +737,10 @@ function checkAdminPassword(){
 
 // ── INIT ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
-  if(!requireConfig()) return;
+  if(!requireConfig())return;
   loadStats();
   setInterval(loadStats,30000);
+  setInterval(checkMidnightReset,60000);
 });
 </script>
 </body>

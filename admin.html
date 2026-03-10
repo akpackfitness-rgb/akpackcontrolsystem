@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
@@ -9,6 +10,7 @@
 <body>
 
   <!-- ─── SIDEBAR ─── -->
+
   <aside class="sidebar">
     <div class="sidebar-logo">
       <img src="logo.png" alt="AK Pack Fitness Logo"/>
@@ -32,79 +34,84 @@
   </aside>
 
   <!-- ─── MAIN ─── -->
+
   <div class="main-wrapper">
 
-    <!-- TOP BAR -->
-    <div class="topbar">
-      <div class="topbar-title">Attendance Monitor</div>
-      <div class="topbar-right">
-        <span class="live-dot">LIVE</span>
-        <span id="lastRefreshBadge" style="font-size:0.72rem;color:var(--text-3)">Updated: —</span>
-        <button class="btn btn-secondary" style="padding:7px 14px;font-size:0.78rem" onclick="loadAdminDashboard()">↻ Refresh</button>
+```
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-title">Attendance Monitor</div>
+  <div class="topbar-right">
+    <span class="live-dot">LIVE</span>
+    <span id="lastRefreshBadge" style="font-size:0.72rem;color:var(--text-3)">Updated: —</span>
+    <button class="btn btn-secondary" style="padding:7px 14px;font-size:0.78rem" onclick="loadAdminDashboard()">↻ Refresh</button>
+  </div>
+</div>
+
+<!-- PAGE CONTENT -->
+<main class="page-content">
+
+  <!-- STAT ROW -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px">
+
+    <div class="stat-counter">
+      <div class="stat-counter-label">Pack Inside Now</div>
+      <div class="stat-counter-number" id="packCounter">—</div>
+      <div class="stat-counter-sub">Check-ins Today</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-label">Total Exits Today</div>
+      <div class="stat-card-value" id="exitCounter" style="color:var(--blue)">—</div>
+      <div class="stat-card-sub">Exit records</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-label">Expiring Soon</div>
+      <div class="stat-card-value" id="warningCounter" style="color:var(--yellow)">—</div>
+      <div class="stat-card-sub">Within 3 days</div>
+    </div>
+
+    <div class="stat-card" style="justify-content:center;align-items:center;text-align:center">
+      <div style="font-size:0.72rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-3);margin-bottom:6px">Quick Links</div>
+      <a href="history.html" class="btn btn-secondary btn-block" style="margin-bottom:6px;font-size:0.8rem">📋 Full History</a>
+      <a href="index.html"   class="btn btn-ghost   btn-block" style="font-size:0.8rem">🏋️ Check-In Terminal</a>
+    </div>
+
+  </div>
+
+  <!-- TODAY'S ATTENDANCE CARDS -->
+  <div class="card">
+    <div class="flex-between mb-16">
+      <div>
+        <div class="section-title">Today's Attendance</div>
+        <div class="section-divider"></div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-3)">
+        Click any card to view full details
       </div>
     </div>
 
-    <!-- PAGE CONTENT -->
-    <main class="page-content">
-
-      <!-- STAT ROW -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px">
-
-        <div class="stat-counter">
-          <div class="stat-counter-label">Pack Inside Now</div>
-          <div class="stat-counter-number" id="packCounter">—</div>
-          <div class="stat-counter-sub">Check-ins Today</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-card-label">Total Exits Today</div>
-          <div class="stat-card-value" id="exitCounter" style="color:var(--blue)">—</div>
-          <div class="stat-card-sub">Exit records</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-card-label">Expiring Soon</div>
-          <div class="stat-card-value" id="warningCounter" style="color:var(--yellow)">—</div>
-          <div class="stat-card-sub">Within 3 days</div>
-        </div>
-
-        <div class="stat-card" style="justify-content:center;align-items:center;text-align:center">
-          <div style="font-size:0.72rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-3);margin-bottom:6px">Quick Links</div>
-          <a href="history.html" class="btn btn-secondary btn-block" style="margin-bottom:6px;font-size:0.8rem">📋 Full History</a>
-          <a href="index.html"   class="btn btn-ghost   btn-block" style="font-size:0.8rem">🏋️ Check-In Terminal</a>
-        </div>
-
+    <div id="attendanceGrid" class="attendance-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:40px">
+        <div class="spinner"></div>
+        <p style="font-size:0.82rem;color:var(--text-3);margin-top:8px">Loading attendance...</p>
       </div>
+    </div>
+  </div>
 
-      <!-- TODAY'S ATTENDANCE CARDS -->
-      <div class="card">
-        <div class="flex-between mb-16">
-          <div>
-            <div class="section-title">Today's Attendance</div>
-            <div class="section-divider"></div>
-          </div>
-          <div style="font-size:0.78rem;color:var(--text-3)">
-            Click any card to view full details
-          </div>
-        </div>
+</main>
 
-        <div id="attendanceGrid" class="attendance-grid">
-          <div style="grid-column:1/-1;text-align:center;padding:40px">
-            <div class="spinner"></div>
-            <p style="font-size:0.82rem;color:var(--text-3);margin-top:8px">Loading attendance...</p>
-          </div>
-        </div>
-      </div>
+<!-- FOOTER -->
+<footer class="site-footer">
+  <p>AK PACK FITNESS &copy; <span id="fyear"></span> — <span>ADMIN MONITOR</span></p>
+</footer>
+```
 
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="site-footer">
-      <p>AK PACK FITNESS &copy; <span id="fyear"></span> — <span>ADMIN MONITOR</span></p>
-    </footer>
   </div>
 
   <!-- ─── MEMBER DETAIL MODAL ─── -->
+
   <div id="memberModal" class="modal-overlay hidden">
     <div class="modal-box">
       <div class="modal-header">
@@ -121,17 +128,18 @@
   </div>
 
   <script src="script.js"></script>
+
   <script>
     document.getElementById('fyear').textContent = new Date().getFullYear();
 
     // ── Pastel colors cycle ──
     const PASTELS = [
-      { bg:'#dbeafe', border:'#bfdbfe', dot:'#3b82f6' },
-      { bg:'#d1fae5', border:'#a7f3d0', dot:'#22c55e' },
-      { bg:'#ffedd5', border:'#fed7aa', dot:'#f97316' },
-      { bg:'#ede9fe', border:'#ddd6fe', dot:'#8b5cf6' },
-      { bg:'#fce7f3', border:'#fbcfe8', dot:'#ec4899' },
-      { bg:'#ccfbf1', border:'#99f6e4', dot:'#14b8a6' },
+      { bg:'#1E3A5F', border:'#2D5080', dot:'#7EB8F7', text:'#7EB8F7' },
+      { bg:'#1A3D2E', border:'#2A5C44', dot:'#6DDBA0', text:'#6DDBA0' },
+      { bg:'#3D2A14', border:'#5C3F1E', dot:'#F5A855', text:'#F5A855' },
+      { bg:'#2A1F45', border:'#3D2D65', dot:'#B088F5', text:'#B088F5' },
+      { bg:'#3D1E2A', border:'#5C2D40', dot:'#F588AA', text:'#F588AA' },
+      { bg:'#0E2D30', border:'#154045', dot:'#50D8D0', text:'#50D8D0' },
     ];
 
     function getStatusPill(status) {
@@ -188,7 +196,7 @@
                 <span style="width:7px;height:7px;background:${p.dot};border-radius:50%;display:inline-block;flex-shrink:0"></span>
                 ${time} · ${date}
               </div>
-              <div class="att-card-name">${name}</div>
+              <div class="att-card-name" style="color:${p.text}">${name}</div>
               <div class="att-card-id">${id}</div>
               <div class="att-card-footer">
                 ${getStatusPill(status)}
@@ -253,5 +261,6 @@
       setInterval(loadAdminDashboard, 8000);
     });
   </script>
+
 </body>
 </html>

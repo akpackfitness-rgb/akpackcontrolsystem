@@ -1,37 +1,100 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <title>AK Pack Fitness — Check In</title>
   <link rel="stylesheet" href="style.css"/>
   <style>
-    .terminal-wrap { display:flex; flex-direction:column; align-items:center; padding:8px 0 40px; }
-    .input-card {
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:14px; padding:28px 32px; width:100%; max-width:520px;
-      box-shadow:var(--shadow-md); position:relative; overflow:hidden;
+    /* ── NUMBER PAD ── */
+    .numpad-display {
+      background: var(--surface-3);
+      border: 2px solid var(--border-md);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      font-family: var(--font-display);
+      font-size: 3rem;
+      letter-spacing: 8px;
+      color: var(--text);
+      text-align: center;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      position: relative;
+      transition: border-color 0.2s;
+      word-break: break-all;
     }
-    .input-card::before {
-      content:''; position:absolute; top:0; left:0; right:0; height:2px;
-      background:linear-gradient(90deg,var(--rose),var(--rose-bright),transparent);
+    .numpad-display.active { border-color: var(--rose); box-shadow: 0 0 0 3px var(--rose-glow); }
+    .numpad-display-placeholder { color: var(--text-3); font-size: 1.2rem; letter-spacing: 3px; font-family: var(--font-body); font-weight: 400; }
+    .numpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
     }
-    .action-btn-wrap { display:flex; gap:10px; margin-top:16px; }
-    /* Stats row */
-    .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; width:100%; max-width:960px; margin-bottom:20px; }
-    /* Graph section */
+    .numpad-key {
+      background: var(--surface-2);
+      border: 1.5px solid var(--border-md);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-display);
+      font-size: 2rem;
+      letter-spacing: 1px;
+      padding: 20px 10px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s cubic-bezier(0.34,1.4,0.64,1);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      line-height: 1;
+    }
+    .numpad-key:hover  { background: var(--surface-3); border-color: var(--border-lg); transform: scale(1.04); }
+    .numpad-key:active { transform: scale(0.93); background: var(--glass-hover); }
+    .numpad-key.key-clear  { background: var(--surface-3); color: var(--yellow); border-color: var(--yellow-border); font-size: 1.3rem; font-family: var(--font-heading); letter-spacing: 2px; }
+    .numpad-key.key-clear:hover  { background: var(--yellow-bg); }
+    .numpad-key.key-enter  { background: linear-gradient(135deg,var(--rose),var(--rose-bright)); color: #fff; border-color: transparent; box-shadow: 0 4px 18px var(--rose-glow-md); font-size: 1.5rem; }
+    .numpad-key.key-enter:hover  { box-shadow: 0 6px 28px var(--rose-glow-md); transform: scale(1.05); }
+    .numpad-key.key-exit   { background: linear-gradient(135deg,#3B0DAA,#6B3BF0); color: #fff; border-color: transparent; box-shadow: 0 4px 18px rgba(107,59,240,0.35); font-size: 1.5rem; }
+    .numpad-key.key-exit:hover   { box-shadow: 0 6px 28px rgba(107,59,240,0.5); transform: scale(1.05); }
+    .numpad-key.key-del { font-size: 1.5rem; color: var(--text-2); }
+
+    /* ── LAYOUT ── */
+    .terminal-wrap { display:flex; flex-direction:column; align-items:center; padding:4px 0 32px; }
+    .input-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; width:100%; max-width:440px; box-shadow:var(--shadow-md); position:relative; overflow:hidden; }
+    .input-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--rose),var(--rose-bright),transparent); }
+    .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:100%; max-width:960px; margin-bottom:16px; }
     .graph-section { width:100%; max-width:960px; }
-    /* Countdown */
-    .countdown-wrap { width:100%; max-width:520px; margin-top:12px; text-align:center; }
-    .countdown-bar-track { height:3px; background:var(--surface-3); border-radius:99px; overflow:hidden; margin-top:6px; }
+    .countdown-wrap { width:100%; max-width:440px; margin-top:10px; text-align:center; }
+    .countdown-bar-track { height:2px; background:var(--surface-3); border-radius:99px; overflow:hidden; margin-top:5px; }
     .countdown-bar-fill { height:100%; background:linear-gradient(90deg,var(--rose),var(--rose-bright)); width:100%; transition:width 5s linear; border-radius:99px; }
+    .mode-label { font-size:0.65rem; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--text-3); margin-bottom:10px; text-align:center; }
+
+    /* ── WELCOME BANNER ── */
+    .welcome-banner { text-align:center; padding:14px 16px; margin-top:13px; background:var(--green-bg); border:1.5px solid var(--green-border); border-radius:var(--radius-sm); animation:bannerPop 0.45s cubic-bezier(0.34,1.56,0.64,1); }
+    .welcome-wolf { font-size:2.4rem; margin-bottom:4px; }
+    .welcome-banner h2 { font-family:var(--font-heading); font-size:clamp(0.9rem,3vw,1.3rem); font-weight:800; letter-spacing:3px; color:var(--green); text-transform:uppercase; margin-bottom:5px; }
+    .pack-msg { font-size:clamp(0.82rem,2.5vw,0.96rem); color:var(--green); opacity:0.85; line-height:1.5; }
+    @keyframes bannerPop{0%{opacity:0;transform:scale(0.92)}60%{transform:scale(1.03)}100%{opacity:1;transform:scale(1)}}
+
+    @media(max-width:600px){
+      .stats-row { grid-template-columns:1fr 1fr; }
+      .input-card { padding:14px; }
+      .numpad-key { padding:16px 8px; font-size:1.7rem; }
+      .numpad-key.key-clear, .numpad-key.key-del { font-size:1.1rem; }
+      .numpad-display { font-size:2.4rem; min-height:66px; padding:14px; }
+      .numpad-grid { gap:8px; }
+    }
   </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
-
+<!-- SIDEBAR (desktop/tablet) -->
 <aside class="sidebar">
   <div class="sidebar-logo" id="logoTapArea">
     <img src="logo.png" alt="AK Pack Fitness"/>
@@ -41,8 +104,8 @@
   <div class="sidebar-section">
     <div class="sidebar-section-label">Menu</div>
     <ul class="sidebar-nav">
-      <li><a href="index.html" class="active"><span class="nav-icon">🏋️</span> Check In Terminal</a></li>
-      <li id="navAdmin"   class="hidden"><a href="admin.html"><span class="nav-icon">📊</span> Attendance Monitor</a></li>
+      <li><a href="index.html" class="active"><span class="nav-icon">🏋️</span> Check In</a></li>
+      <li id="navAdmin"   class="hidden"><a href="admin.html"><span class="nav-icon">📊</span> Monitor</a></li>
       <li id="navHistory" class="hidden"><a href="history.html"><span class="nav-icon">📋</span> History</a></li>
       <li><a href="workout.html"><span class="nav-icon">💪</span> Training Plans</a></li>
     </ul>
@@ -53,16 +116,25 @@
   </div>
 </aside>
 
-<!-- ADMIN LOGIN OVERLAY -->
+<!-- BOTTOM NAV (mobile) -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="index.html" class="bottom-nav-item active"><span class="bnav-icon">🏋️</span><span>Check In</span></a>
+    <a href="workout.html" class="bottom-nav-item"><span class="bnav-icon">💪</span><span>Training</span></a>
+    <a href="#" class="bottom-nav-item" onclick="openAdminLogin();return false;"><span class="bnav-icon">📊</span><span>Admin</span></a>
+    <a href="#" class="bottom-nav-item" onclick="showConfigOverlay();return false;"><span class="bnav-icon">⚙️</span><span>Settings</span></a>
+  </div>
+</nav>
 
+<!-- ADMIN LOGIN OVERLAY -->
 <div id="adminLoginOverlay" class="config-overlay hidden">
-  <div class="config-box" style="max-width:380px">
+  <div class="config-box" style="max-width:360px">
     <div class="config-title">🔒 Admin Access</div>
-    <p class="config-note">Enter the admin password to access monitor and history pages.</p>
+    <p class="config-note">Enter the admin password to access monitor and history.</p>
     <input class="config-input" id="adminPasswordInput" type="password" placeholder="Enter password..."
       onkeydown="if(event.key==='Enter')checkAdminPassword()"/>
-    <div id="adminLoginError" class="alert alert-danger hidden"><span class="alert-icon">✖</span> Incorrect password.</div>
-    <div style="display:flex;gap:10px;margin-top:14px">
+    <div id="adminLoginError" class="alert alert-danger hidden" style="margin-top:8px"><span class="alert-icon">✖</span> Incorrect password.</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn btn-primary" style="flex:1" onclick="checkAdminPassword()">Enter</button>
       <button class="btn btn-secondary" onclick="closeAdminLogin()">Cancel</button>
     </div>
@@ -70,131 +142,141 @@
 </div>
 
 <!-- MAIN -->
-
 <div class="main-wrapper">
   <div class="topbar">
-    <div class="topbar-title" id="topbarTitle">Check In Terminal</div>
+    <div class="topbar-title" id="topbarTitle">🐺 Check In Terminal</div>
     <div class="topbar-right">
       <span class="live-dot">LIVE</span>
-      <span id="clockDisplay" style="font-size:0.8rem;color:var(--text-3);font-family:'DM Sans',sans-serif"></span>
+      <span id="clockDisplay" style="font-size:0.75rem;color:var(--text-3)"></span>
     </div>
   </div>
 
   <main class="page-content">
     <div class="terminal-wrap">
 
-```
-  <!-- ── FLOATING CUBE BUTTONS ── -->
-  <div class="cube-row" style="width:100%;max-width:760px">
-
-    <!-- Check In Cube -->
-    <div class="cube-btn active-checkin" id="cubeCheckin" onclick="setMode('checkin')">
-      <span class="cube-btn-icon">🏋️</span>
-      <div class="cube-btn-label">Check In</div>
-      <div class="cube-btn-sub">Record member entry</div>
-    </div>
-
-    <!-- Live Count Cube -->
-    <div class="cube-live">
-      <div class="cube-live-number" id="liveCount">—</div>
-      <div class="cube-live-label">Pack Inside</div>
-      <div class="cube-live-sub" id="liveCountSub">Today's check-ins</div>
-    </div>
-
-    <!-- Exit Cube -->
-    <div class="cube-btn" id="cubeExit" onclick="setMode('exit')">
-      <span class="cube-btn-icon">🚪</span>
-      <div class="cube-btn-label">Exit</div>
-      <div class="cube-btn-sub">Record member exit</div>
-    </div>
-
-  </div>
-
-  <!-- ── MEMBER ID INPUT ── -->
-  <div class="input-card mt-24">
-    <div class="form-group" style="margin-bottom:14px">
-      <label class="form-label" id="inputLabel">Member ID — Check In</label>
-      <input class="form-input" id="memberIdInput" type="text"
-        placeholder="E.G. AK-001"
-        autocomplete="off" autocorrect="off"
-        autocapitalize="characters" spellcheck="false"/>
-    </div>
-    <div class="action-btn-wrap">
-      <button class="btn btn-primary btn-block btn-lg" id="actionBtn">CHECK IN</button>
-      <button class="btn btn-ghost" onclick="fullReset(true)" style="padding:12px 16px">✕</button>
-    </div>
-  </div>
-
-  <!-- Loading -->
-  <div id="loadingSpinner" class="hidden mt-16" style="width:100%;max-width:520px;text-align:center">
-    <div class="spinner"></div>
-    <p id="loadingText" style="font-size:0.78rem;color:var(--text-3);margin-top:4px;letter-spacing:2px;text-transform:uppercase">Searching...</p>
-  </div>
-
-  <!-- Messages -->
-  <div id="terminalMessage" class="hidden" style="width:100%;max-width:520px;margin-top:12px"></div>
-
-  <!-- Member result -->
-  <div id="memberResult" class="hidden mt-16" style="width:100%;max-width:600px"></div>
-
-  <!-- Countdown -->
-  <div id="autoResetBar" class="countdown-wrap hidden">
-    <p style="font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-3)">
-      Resetting in <span id="countdownNum" style="font-weight:700;color:var(--text-2)">5</span>s ·
-      <span style="text-decoration:underline;cursor:pointer;color:var(--rose-bright)" onclick="stopAutoReset()">Cancel</span>
-    </p>
-    <div class="countdown-bar-track"><div id="countdownBar" class="countdown-bar-fill"></div></div>
-  </div>
-
-  <!-- DIVIDER -->
-  <div style="width:100%;max-width:960px;border-top:1px solid var(--border);margin:32px 0 24px"></div>
-
-  <!-- ── TODAY'S STATS ROW ── -->
-  <div class="stats-row">
-    <div class="stat-counter">
-      <div class="stat-counter-label">Check Ins Today</div>
-      <div class="stat-counter-number" id="statCheckIns">—</div>
-      <div class="stat-counter-sub">Total entries</div>
-    </div>
-    <div class="stat-counter">
-      <div class="stat-counter-label">Exits Today</div>
-      <div class="stat-counter-number" id="statExits" style="color:var(--blue);text-shadow:0 0 20px rgba(59,130,246,0.3)">—</div>
-      <div class="stat-counter-sub">Total exits</div>
-    </div>
-    <div class="stat-counter">
-      <div class="stat-counter-label">Peak Hour Today</div>
-      <div class="stat-counter-number" id="statPeakHour" style="font-size:2rem;color:var(--yellow);text-shadow:0 0 20px rgba(245,158,11,0.3)">—</div>
-      <div class="stat-counter-sub">Busiest time</div>
-    </div>
-    <div class="stat-counter">
-      <div class="stat-counter-label">Currently Inside</div>
-      <div class="stat-counter-number" id="statInside" style="color:var(--green);text-shadow:0 0 20px rgba(34,197,94,0.3)">—</div>
-      <div class="stat-counter-sub">Estimated</div>
-    </div>
-  </div>
-
-  <!-- ── PEAK TIME GRAPH ── -->
-  <div class="graph-section">
-    <div class="chart-container">
-      <div class="chart-header">
-        <div>
-          <div class="section-title">⏱ Peak Time Analysis</div>
-          <div class="section-divider"></div>
+      <!-- FLOATING CUBES -->
+      <div class="cube-row" style="width:100%;max-width:680px">
+        <div class="cube-btn active-checkin" id="cubeCheckin" onclick="setMode('checkin')">
+          <span class="cube-btn-icon">🏋️</span>
+          <div class="cube-btn-label">Check In</div>
+          <div class="cube-btn-sub">Record entry</div>
         </div>
-        <div class="day-selector" id="daySelector"></div>
+        <div class="cube-live">
+          <div class="cube-live-number" id="liveCount">—</div>
+          <div class="cube-live-label">Pack Inside</div>
+          <div class="cube-live-sub">Today</div>
+        </div>
+        <div class="cube-btn" id="cubeExit" onclick="setMode('exit')">
+          <span class="cube-btn-icon">🚪</span>
+          <div class="cube-btn-label">Exit</div>
+          <div class="cube-btn-sub">Record exit</div>
+        </div>
       </div>
-      <div style="font-size:0.72rem;color:var(--text-3);margin-bottom:14px">
-        Showing members inside per hour — <span style="color:var(--yellow)">🌟 Gold = peak hour</span>
+
+      <!-- NUMBER PAD CARD -->
+      <div class="input-card mt-16">
+        <div class="mode-label" id="modeLabel">ENTER MEMBER ID — CHECK IN</div>
+
+        <!-- Display -->
+        <div class="numpad-display" id="numpadDisplay">
+          <span class="numpad-display-placeholder" id="numpadPlaceholder">TAP NUMBERS BELOW</span>
+          <span id="numpadValue" style="display:none"></span>
+        </div>
+
+        <!-- Hidden input for compatibility -->
+        <input type="hidden" id="memberIdInput"/>
+
+        <!-- Number Grid -->
+        <div class="numpad-grid">
+          <button class="numpad-key" onclick="numpadPress('1')">1</button>
+          <button class="numpad-key" onclick="numpadPress('2')">2</button>
+          <button class="numpad-key" onclick="numpadPress('3')">3</button>
+          <button class="numpad-key" onclick="numpadPress('4')">4</button>
+          <button class="numpad-key" onclick="numpadPress('5')">5</button>
+          <button class="numpad-key" onclick="numpadPress('6')">6</button>
+          <button class="numpad-key" onclick="numpadPress('7')">7</button>
+          <button class="numpad-key" onclick="numpadPress('8')">8</button>
+          <button class="numpad-key" onclick="numpadPress('9')">9</button>
+          <button class="numpad-key key-clear" onclick="numpadClear()">CLEAR</button>
+          <button class="numpad-key" onclick="numpadPress('0')">0</button>
+          <button class="numpad-key key-del" onclick="numpadDelete()">⌫</button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button class="numpad-key key-enter" onclick="numpadSubmit()">✓ CHECK IN</button>
+          <button class="numpad-key key-exit"  id="exitActionBtn" onclick="numpadSubmitExit()">🚪 EXIT</button>
+        </div>
       </div>
-      <div class="chart-bars" id="chartBars">
-        <div style="text-align:center;width:100%;padding:20px;color:var(--text-3);font-size:0.82rem">Loading data...</div>
+
+      <!-- Loading -->
+      <div id="loadingSpinner" class="hidden mt-16" style="width:100%;max-width:440px;text-align:center">
+        <div class="spinner"></div>
+        <p style="font-size:0.72rem;color:var(--text-3);margin-top:4px;letter-spacing:2px;text-transform:uppercase">Searching...</p>
       </div>
+
+      <!-- Messages -->
+      <div id="terminalMessage" class="hidden" style="width:100%;max-width:440px;margin-top:10px"></div>
+
+      <!-- Member Result -->
+      <div id="memberResult" class="hidden mt-16" style="width:100%;max-width:580px"></div>
+
+      <!-- Countdown -->
+      <div id="autoResetBar" class="countdown-wrap hidden">
+        <p style="font-size:0.66rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-3)">
+          Resetting in <span id="countdownNum" style="font-weight:700;color:var(--text-2)">5</span>s ·
+          <span style="text-decoration:underline;cursor:pointer;color:var(--rose-bright)" onclick="stopAutoReset()">Cancel</span>
+        </p>
+        <div class="countdown-bar-track"><div id="countdownBar" class="countdown-bar-fill"></div></div>
+      </div>
+
+      <!-- DIVIDER -->
+      <div style="width:100%;max-width:960px;border-top:1px solid var(--border);margin:24px 0 18px"></div>
+
+      <!-- STATS -->
+      <div class="stats-row">
+        <div class="stat-counter">
+          <div class="stat-counter-label">Check Ins</div>
+          <div class="stat-counter-number" id="statCheckIns">—</div>
+          <div class="stat-counter-sub">Today</div>
+        </div>
+        <div class="stat-counter">
+          <div class="stat-counter-label">Exits</div>
+          <div class="stat-counter-number" id="statExits" style="color:var(--blue);text-shadow:0 0 20px rgba(59,130,246,0.3)">—</div>
+          <div class="stat-counter-sub">Today</div>
+        </div>
+        <div class="stat-counter">
+          <div class="stat-counter-label">Peak Hour</div>
+          <div class="stat-counter-number" id="statPeakHour" style="font-size:1.6rem;color:var(--yellow);text-shadow:0 0 20px rgba(245,158,11,0.3)">—</div>
+          <div class="stat-counter-sub">Busiest time</div>
+        </div>
+        <div class="stat-counter">
+          <div class="stat-counter-label">Inside Now</div>
+          <div class="stat-counter-number" id="statInside" style="color:var(--green);text-shadow:0 0 20px rgba(34,197,94,0.3)">—</div>
+          <div class="stat-counter-sub">Estimated</div>
+        </div>
+      </div>
+
+      <!-- GRAPH -->
+      <div class="graph-section">
+        <div class="chart-container">
+          <div class="chart-header">
+            <div>
+              <div class="section-title">⏱ Peak Time Analysis</div>
+              <div class="section-divider"></div>
+            </div>
+            <div class="day-selector" id="daySelector"></div>
+          </div>
+          <div style="font-size:0.68rem;color:var(--text-3);margin-bottom:12px">Members per hour · <span style="color:var(--yellow)">🌟 Gold = peak</span></div>
+          <div class="chart-scroll">
+            <div class="chart-bars" id="chartBars">
+              <div style="text-align:center;width:100%;padding:20px;color:var(--text-3);font-size:0.8rem">Loading data...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
-  </div>
-
-</div>
-```
-
   </main>
 
   <footer class="site-footer">
@@ -203,185 +285,204 @@
 </div>
 
 <script src="script.js"></script>
-
 <script>
 document.getElementById('fyear').textContent = new Date().getFullYear();
 
-// ── Clock ──
-function updateClock() {
-  document.getElementById('clockDisplay').textContent = nowTime();
+// Clock
+function updateClock(){ document.getElementById('clockDisplay').textContent = nowTime(); }
+setInterval(updateClock,1000); updateClock();
+
+// ── NUMBER PAD ────────────────────────────────────────────────
+let numpadCurrent = '';
+const MAX_DIGITS   = 6;
+
+function numpadPress(digit) {
+  stopAutoReset();
+  if (numpadCurrent.length >= MAX_DIGITS) return;
+  numpadCurrent += digit;
+  updateNumpadDisplay();
 }
-setInterval(updateClock, 1000); updateClock();
+function numpadDelete() {
+  stopAutoReset();
+  numpadCurrent = numpadCurrent.slice(0,-1);
+  updateNumpadDisplay();
+}
+function numpadClear() {
+  stopAutoReset();
+  numpadCurrent = '';
+  updateNumpadDisplay();
+  clearResult();
+}
+function updateNumpadDisplay() {
+  const disp  = document.getElementById('numpadDisplay');
+  const ph    = document.getElementById('numpadPlaceholder');
+  const val   = document.getElementById('numpadValue');
+  const input = document.getElementById('memberIdInput');
+  if (numpadCurrent) {
+    ph.style.display  = 'none';
+    val.style.display = 'block';
+    val.textContent   = numpadCurrent;
+    disp.classList.add('active');
+  } else {
+    ph.style.display  = 'block';
+    val.style.display = 'none';
+    disp.classList.remove('active');
+  }
+  input.value = numpadCurrent;
+}
+function numpadSubmit() {
+  if (!requireConfig()) return;
+  if (!numpadCurrent) { showTerminalMessage('Please enter your Member ID.','warning'); return; }
+  setMode('checkin');
+  handleCheckIn(numpadCurrent).then(()=>startAutoReset());
+}
+function numpadSubmitExit() {
+  if (!requireConfig()) return;
+  if (!numpadCurrent) { showTerminalMessage('Please enter your Member ID.','warning'); return; }
+  setMode('exit');
+  handleExitMember(numpadCurrent).then(()=>startAutoReset());
+}
 
-// ── Mode ──
+// Support physical keyboard too
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName==='INPUT'&&e.target.type!=='hidden') return;
+  if (e.key>='0'&&e.key<='9') numpadPress(e.key);
+  else if (e.key==='Backspace') numpadDelete();
+  else if (e.key==='Enter') numpadSubmit();
+  else if (e.key==='Escape') numpadClear();
+  else if (e.key==='Delete') numpadClear();
+});
+
+// ── MODE ──────────────────────────────────────────────────────
 let currentMode = 'checkin';
-
 function setMode(mode) {
   currentMode = mode;
   const ci = document.getElementById('cubeCheckin');
   const ex = document.getElementById('cubeExit');
-
-  if (mode === 'checkin') {
-    ci.className = 'cube-btn active-checkin';
-    ex.className = 'cube-btn dimmed';
-    document.getElementById('inputLabel').textContent  = 'Member ID — Check In';
-    document.getElementById('actionBtn').textContent   = 'CHECK IN';
-    document.getElementById('actionBtn').style.background = 'linear-gradient(135deg,var(--rose),var(--rose-bright))';
-    document.getElementById('topbarTitle').textContent = 'Check In Terminal';
+  const ml = document.getElementById('modeLabel');
+  if (mode==='checkin') {
+    ci.className='cube-btn active-checkin'; ex.className='cube-btn dimmed';
+    ml.textContent='ENTER MEMBER ID — CHECK IN';
+    document.getElementById('topbarTitle').textContent='🐺 Check In Terminal';
   } else {
-    ex.className = 'cube-btn active-exit';
-    ci.className = 'cube-btn dimmed';
-    document.getElementById('inputLabel').textContent  = 'Member ID — Exit';
-    document.getElementById('actionBtn').textContent   = '🚪 MARK EXIT';
-    document.getElementById('actionBtn').style.background = 'linear-gradient(135deg,#3B0DAA,#6B3BF0)';
-    document.getElementById('topbarTitle').textContent = 'Exit Terminal';
+    ex.className='cube-btn active-exit'; ci.className='cube-btn dimmed';
+    ml.textContent='ENTER MEMBER ID — EXIT';
+    document.getElementById('topbarTitle').textContent='🚪 Exit Terminal';
   }
-  fullReset(false);
 }
 
-// ── Auto reset ──
-let autoResetTimer=null, cdInterval=null;
+// ── EXIT HANDLER ──────────────────────────────────────────────
+async function handleExitMember(rawId) {
+  const id=rawId.trim();
+  if(!id){showTerminalMessage('Please enter a Member ID.','warning');return;}
+  showLoading(true); clearResult();
+  try {
+    const row=await lookupMember(id);
+    if(!row){showLoading(false);showTerminalMessage(`Member ID "${id}" not found.`,'danger');return;}
+    const member={memberID:row['MemberID']||row['Member ID']||id,name:row['Name']||row['name']||'Unknown'};
+    const exitTime=nowTime();
+    try{await writeRow('Attendance',[today(),exitTime,member.memberID,member.name,'EXIT']);}catch(e){}
+    showLoading(false);
+    const firstName=getFirstName(member.name);
+    const packMsg=getPackMessage(firstName,'exit');
+    const el=document.getElementById('memberResult');
+    el.innerHTML=`<div class="member-result"><div class="member-card" style="text-align:center">
+      <div style="font-size:2.4rem;margin-bottom:8px">👋</div>
+      <div class="member-card-name">${member.name.toUpperCase()}</div>
+      <div class="member-card-id">ID: ${member.memberID}</div>
+      <div style="display:inline-block;background:var(--blue-bg);border:1.5px solid var(--blue-border);border-radius:var(--radius-sm);padding:10px 24px;margin:10px 0">
+        <div class="member-info-label">Exit Recorded</div>
+        <div style="font-family:var(--font-display);font-size:1.8rem;letter-spacing:3px;color:var(--blue)">${exitTime}</div>
+      </div>
+      <div class="welcome-banner" style="background:var(--blue-bg);border-color:var(--blue-border)">
+        <div class="welcome-wolf">🐺</div>
+        <h2 style="color:var(--blue)">SEE YOU SOON, ${firstName.toUpperCase()}!</h2>
+        <p class="pack-msg" style="color:var(--blue)">${packMsg}</p>
+      </div>
+    </div></div>`;
+    el.classList.remove('hidden');
+    loadStats();
+  }catch(err){showLoading(false);showTerminalMessage(`Error: ${err.message}`,'danger');}
+}
 
-function startAutoReset() {
+// ── AUTO RESET ────────────────────────────────────────────────
+let autoResetTimer=null,cdInterval=null;
+function startAutoReset(){
   stopAutoReset();
   let secs=5;
   document.getElementById('autoResetBar').classList.remove('hidden');
-  document.getElementById('countdownNum').textContent = secs;
-  const bar = document.getElementById('countdownBar');
-  bar.style.transition='none'; bar.style.width='100%';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    bar.style.transition='width 5s linear'; bar.style.width='0%';
-  }));
-  cdInterval=setInterval(()=>{ secs--; document.getElementById('countdownNum').textContent=secs; },1000);
-  autoResetTimer=setTimeout(()=>fullReset(true),5000);
+  document.getElementById('countdownNum').textContent=secs;
+  const bar=document.getElementById('countdownBar');
+  bar.style.transition='none';bar.style.width='100%';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{bar.style.transition='width 5s linear';bar.style.width='0%';}));
+  cdInterval=setInterval(()=>{secs--;document.getElementById('countdownNum').textContent=secs;},1000);
+  autoResetTimer=setTimeout(()=>fullReset(),5000);
 }
-function stopAutoReset() {
-  clearTimeout(autoResetTimer); clearInterval(cdInterval);
+function stopAutoReset(){
+  clearTimeout(autoResetTimer);clearInterval(cdInterval);
   autoResetTimer=cdInterval=null;
   document.getElementById('autoResetBar').classList.add('hidden');
 }
-function fullReset(returnCheckin=true) {
+function fullReset(){
   stopAutoReset(); clearResult();
-  document.getElementById('memberIdInput').value='';
-  document.getElementById('memberIdInput').focus();
-  if (returnCheckin && currentMode!=='checkin') setMode('checkin');
+  numpadCurrent=''; updateNumpadDisplay();
+  setMode('checkin');
 }
 
-// ── Exit handler ──
-async function handleExitMember(rawId) {
-  const id = rawId.trim();
-  if (!id) { showTerminalMessage('Please enter a Member ID.','warning'); return; }
-  showLoading(true);
-  document.getElementById('loadingText').textContent='Recording exit...';
-  clearResult();
-  try {
-    const row = await lookupMember(id);
-    if (!row) { showLoading(false); showTerminalMessage(`Member ID "${id}" not found.`,'danger'); return; }
-    const member = {
-      memberID: row['MemberID']||row['Member ID']||id,
-      name:     row['Name']||row['name']||'Unknown',
-    };
-    const exitTime = nowTime();
-    try { await writeRow('Attendance',[today(),exitTime,member.memberID,member.name,'EXIT']); } catch(e){}
-    showLoading(false);
-    const el = document.getElementById('memberResult');
-    el.innerHTML = `<div class="member-result">
-      <div class="member-card" style="text-align:center">
-        <div style="font-size:2.8rem;margin-bottom:10px">👋</div>
-        <div class="member-card-name">${member.name.toUpperCase()}</div>
-        <div class="member-card-id">ID: ${member.memberID}</div>
-        <div style="display:inline-block;background:var(--blue-bg);border:1.5px solid var(--blue-border);border-radius:var(--radius-sm);padding:12px 28px;margin-bottom:14px">
-          <div class="member-info-label">Exit Time</div>
-          <div style="font-family:var(--font-display);font-size:2rem;letter-spacing:3px;color:var(--blue)">${exitTime}</div>
-        </div>
-        <div class="welcome-banner" style="background:var(--blue-bg);border-color:var(--blue-border)">
-          <h2 style="color:var(--blue)">EXIT RECORDED — GREAT WORKOUT! 💪</h2>
-        </div>
-      </div>
-    </div>`;
-    el.classList.remove('hidden');
-    startAutoReset();
-    loadStats();
-  } catch(err) {
-    showLoading(false);
-    showTerminalMessage(`Error: ${err.message}`,'danger');
-  }
-}
-
-// ── Stats & Graph ──
-let graphData = {}; // date -> hour -> count
-let selectedDay = today();
-
-async function loadStats() {
-  try {
-    const rows = await readSheet('Attendance');
-    const todayStr = today();
-    const todayRows = rows.filter(r=>(r['Date']||r['date']||'').trim()===todayStr);
-    const checkIns = todayRows.filter(r=>(r['Status']||r['status']||'')!=='EXIT');
-    const exits    = todayRows.filter(r=>(r['Status']||r['status']||'')==='EXIT');
-    const inside   = Math.max(0, checkIns.length - exits.length);
-
-    document.getElementById('liveCount').textContent    = checkIns.length;
-    document.getElementById('liveCountSub').textContent = `Today's entries`;
-    document.getElementById('statCheckIns').textContent = checkIns.length;
-    document.getElementById('statExits').textContent    = exits.length;
-    document.getElementById('statInside').textContent   = inside;
-
-    // Build graph data for all dates
-    graphData = {};
-    rows.forEach(r => {
-      const date   = (r['Date']||r['date']||'').trim();
-      const timeStr= (r['Time']||r['time']||'').trim();
-      const status = (r['Status']||r['status']||'').trim();
-      if (!date || !timeStr) return;
-      if (!graphData[date]) graphData[date]={};
-      const hour = parseInt(timeStr.split(':')[0]);
-      if (isNaN(hour)) return;
-      if (!graphData[date][hour]) graphData[date][hour]=0;
-      if (status !== 'EXIT') graphData[date][hour]++;
+// ── STATS & GRAPH ─────────────────────────────────────────────
+let graphData={}, selectedDay=today();
+async function loadStats(){
+  try{
+    const rows=await readSheet('Attendance');
+    const todayStr=today();
+    const todayRows=rows.filter(r=>(r['Date']||r['date']||'').trim()===todayStr);
+    const checkIns=todayRows.filter(r=>(r['Status']||r['status']||'')!=='EXIT');
+    const exits   =todayRows.filter(r=>(r['Status']||r['status']||'')==='EXIT');
+    const inside  =Math.max(0,checkIns.length-exits.length);
+    document.getElementById('liveCount').textContent=checkIns.length;
+    document.getElementById('statCheckIns').textContent=checkIns.length;
+    document.getElementById('statExits').textContent=exits.length;
+    document.getElementById('statInside').textContent=inside;
+    graphData={};
+    rows.forEach(r=>{
+      const date=(r['Date']||r['date']||'').trim();
+      const timeStr=(r['Time']||r['time']||'').trim();
+      const status=(r['Status']||r['status']||'').trim();
+      if(!date||!timeStr) return;
+      if(!graphData[date])graphData[date]={};
+      const hour=parseInt(timeStr.split(':')[0]);
+      if(isNaN(hour)) return;
+      if(!graphData[date][hour])graphData[date][hour]=0;
+      if(status!=='EXIT')graphData[date][hour]++;
     });
-
-    // Peak hour today
-    const todayHours = graphData[todayStr]||{};
-    const maxCount = Math.max(...Object.values(todayHours),0);
-    const peakHour = Object.keys(todayHours).find(h=>todayHours[h]===maxCount);
-    document.getElementById('statPeakHour').textContent = peakHour!=null ? `${peakHour}:00` : '—';
-
-    buildDaySelector();
-    renderGraph(selectedDay);
-  } catch(e) { console.warn('Stats error:',e); }
+    const todayHours=graphData[todayStr]||{};
+    const maxCount=Math.max(...Object.values(todayHours),0);
+    const peakHour=Object.keys(todayHours).find(h=>todayHours[h]===maxCount);
+    document.getElementById('statPeakHour').textContent=peakHour!=null?`${peakHour}:00`:'—';
+    buildDaySelector(); renderGraph(selectedDay);
+  }catch(e){console.warn('Stats error:',e);}
 }
-
-function buildDaySelector() {
-  const dates = Object.keys(graphData).sort().reverse().slice(0,7);
-  if (!dates.includes(today())) dates.unshift(today());
-  const uniqueDates = [...new Set(dates)].sort().reverse().slice(0,7);
-  const sel = document.getElementById('daySelector');
-  sel.innerHTML = uniqueDates.map(d => {
-    const parts = d.split('/');
-    const label = parts.length===3 ? `${parts[0]}/${parts[1]}` : d;
+function buildDaySelector(){
+  const dates=[...new Set([today(),...Object.keys(graphData).sort().reverse()])].slice(0,7);
+  const sel=document.getElementById('daySelector');
+  sel.innerHTML=dates.map(d=>{
+    const parts=d.split('/');
+    const label=parts.length===3?`${parts[0]}/${parts[1]}`:d;
     return `<button class="day-pill ${d===selectedDay?'active':''}" onclick="selectDay('${d}')">${label}</button>`;
   }).join('');
 }
-
-function selectDay(date) {
-  selectedDay = date;
-  buildDaySelector();
-  renderGraph(date);
-}
-
-function renderGraph(date) {
-  const barsEl = document.getElementById('chartBars');
-  const hours = graphData[date]||{};
-  const allHours = Array.from({length:14},(_,i)=>i+6); // 6am-7pm
-  const maxVal = Math.max(...allHours.map(h=>hours[h]||0),1);
-  const peakVal= Math.max(...Object.values(hours),0);
-
-  barsEl.innerHTML = allHours.map(h => {
-    const val = hours[h]||0;
-    const pct = Math.round((val/maxVal)*100);
-    const isPeak = val===peakVal && val>0;
-    const label = h<12?`${h}am`:h===12?'12pm':`${h-12}pm`;
+function selectDay(date){selectedDay=date;buildDaySelector();renderGraph(date);}
+function renderGraph(date){
+  const barsEl=document.getElementById('chartBars');
+  const hours=graphData[date]||{};
+  const allHours=Array.from({length:14},(_,i)=>i+6);
+  const maxVal=Math.max(...allHours.map(h=>hours[h]||0),1);
+  const peakVal=Math.max(...Object.values(hours),0);
+  barsEl.innerHTML=allHours.map(h=>{
+    const val=hours[h]||0;
+    const pct=Math.round((val/maxVal)*100);
+    const isPeak=val===peakVal&&val>0;
+    const label=h<12?`${h}am`:h===12?'12pm':`${h-12}pm`;
     return `<div class="chart-bar-wrap">
       <div class="chart-bar-val">${val||''}</div>
       <div class="chart-bar ${isPeak?'peak':''}" style="height:${pct}%">
@@ -392,11 +493,11 @@ function renderGraph(date) {
   }).join('');
 }
 
-// ── Admin login ──
+// ── ADMIN LOGIN ───────────────────────────────────────────────
 const ADMIN_PASSWORD='akpack2025';
-let logoTaps=0, logoTimer;
-document.getElementById('logoTapArea').addEventListener('click',()=>{
-  logoTaps++; clearTimeout(logoTimer);
+let logoTaps=0,logoTimer;
+document.getElementById('logoTapArea')?.addEventListener('click',()=>{
+  logoTaps++;clearTimeout(logoTimer);
   logoTimer=setTimeout(()=>logoTaps=0,3000);
   if(logoTaps>=5){logoTaps=0;openAdminLogin();}
 });
@@ -410,15 +511,15 @@ function closeAdminLogin(){ document.getElementById('adminLoginOverlay').classLi
 function checkAdminPassword(){
   if(document.getElementById('adminPasswordInput').value===ADMIN_PASSWORD){
     closeAdminLogin();
-    document.getElementById('navAdmin').classList.remove('hidden');
-    document.getElementById('navHistory').classList.remove('hidden');
+    document.getElementById('navAdmin')?.classList.remove('hidden');
+    document.getElementById('navHistory')?.classList.remove('hidden');
     const ov=document.createElement('div');
-    ov.className='config-overlay'; ov.id='adminMenuOverlay';
-    ov.innerHTML=`<div class="config-box" style="max-width:360px">
-      <div class="config-title" style="margin-bottom:18px">🐺 Admin Panel</div>
-      <a href="admin.html" class="btn btn-primary btn-block" style="display:flex;text-decoration:none;margin-bottom:8px;padding:13px">📊 Attendance Monitor</a>
-      <a href="history.html" class="btn btn-secondary btn-block" style="display:flex;text-decoration:none;margin-bottom:18px;padding:13px">📋 Attendance History</a>
-      <button class="btn btn-ghost btn-block" onclick="document.getElementById('adminMenuOverlay').remove()">Close</button>
+    ov.className='config-overlay';ov.id='adminMenuOv';
+    ov.innerHTML=`<div class="config-box" style="max-width:340px">
+      <div class="config-title" style="margin-bottom:16px">🐺 Admin Panel</div>
+      <a href="admin.html"   class="btn btn-primary  btn-block" style="display:flex;text-decoration:none;margin-bottom:8px;padding:12px">📊 Attendance Monitor</a>
+      <a href="history.html" class="btn btn-secondary btn-block" style="display:flex;text-decoration:none;margin-bottom:16px;padding:12px">📋 Attendance History</a>
+      <button class="btn btn-ghost btn-block" onclick="document.getElementById('adminMenuOv').remove()">Close</button>
     </div>`;
     document.body.appendChild(ov);
   } else {
@@ -428,24 +529,12 @@ function checkAdminPassword(){
   }
 }
 
-// ── Init ──
+// ── INIT ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
   if(!requireConfig()) return;
-  const inp=document.getElementById('memberIdInput');
-  inp.addEventListener('focus',stopAutoReset);
-  inp.addEventListener('input',stopAutoReset);
-  inp.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('actionBtn').click();});
-  document.getElementById('actionBtn').addEventListener('click',()=>{
-    if(!requireConfig()) return;
-    const val=document.getElementById('memberIdInput').value;
-    currentMode==='checkin'?handleCheckIn(val):handleExitMember(val);
-  });
-  document.getElementById('adminPasswordInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')checkAdminPassword();});
-  setTimeout(()=>inp.focus(),150);
   loadStats();
-  setInterval(loadStats, 30000);
+  setInterval(loadStats,30000);
 });
 </script>
-
 </body>
 </html>

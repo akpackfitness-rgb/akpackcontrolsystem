@@ -79,12 +79,42 @@ function writeRow(sheetName, rowData) {
 function today() { return new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 function nowTime(){ return new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}); }
 function parseDate(s) {
-  if (!s) return null;
-  const gm=s.match(/Date\((\d+),(\d+),(\d+)\)/);
-  if (gm) return new Date(parseInt(gm[1]),parseInt(gm[2]),parseInt(gm[3]));
-  const p=s.split(/[\/\-\.]/);
-  if (p.length===3) return p[2].length===4?new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0])):new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
-  return new Date(s);
+  if (!s || String(s).trim()==='') return null;
+  s = String(s).trim();
+
+  // Google Sheets Date(year,month,day) — month is 0-indexed
+  const gm = s.match(/Date\((\d+),(\d+),(\d+)\)/);
+  if (gm) return new Date(parseInt(gm[1]), parseInt(gm[2]), parseInt(gm[3]));
+
+  // DD/MM/YYYY or D/M/YYYY
+  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  if (dmy) return new Date(parseInt(dmy[3]), parseInt(dmy[2])-1, parseInt(dmy[1]));
+
+  // YYYY/MM/DD or YYYY-MM-DD
+  const ymd = s.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+  if (ymd) return new Date(parseInt(ymd[1]), parseInt(ymd[2])-1, parseInt(ymd[3]));
+
+  // MM/DD/YYYY (US format)
+  const mdy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  if (mdy) {
+    // Ambiguous — if first number > 12 it must be day
+    if (parseInt(mdy[1]) > 12) return new Date(parseInt(mdy[3]), parseInt(mdy[2])-1, parseInt(mdy[1]));
+    return new Date(parseInt(mdy[3]), parseInt(mdy[1])-1, parseInt(mdy[2]));
+  }
+
+  // Plain number — Google Sheets serial date (days since Dec 30 1899)
+  if (/^\d+$/.test(s)) {
+    const serial = parseInt(s);
+    if (serial > 1000) { // likely a serial date
+      const base = new Date(1899, 11, 30);
+      base.setDate(base.getDate() + serial);
+      return base;
+    }
+  }
+
+  // Last resort
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
 }
 function formatDate(d){ if(!d||isNaN(d.getTime())) return 'N/A'; return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
 function daysRemaining(d){ if(!d||isNaN(d.getTime())) return -999; const n=new Date(); n.setHours(0,0,0,0); return Math.floor((d-n)/(1000*60*60*24)); }
@@ -105,6 +135,13 @@ function extractMember(row, fallbackId) {
   // Normalize row keys by trimming whitespace
   const r = {};
   Object.keys(row).forEach(k => { r[k.trim()] = (row[k]||'').trim(); });
+
+  // Debug — log raw values to console so we can see exactly what Sheets sends
+  console.log('[AK Debug] Raw row keys:', Object.keys(r));
+  console.log('[AK Debug] Package Validity raw:', r['Package Validity']);
+  console.log('[AK Debug] Created On raw:', r['Created On']);
+  console.log('[AK Debug] Parsed expiry:', parseDate(r['Package Validity']));
+
   return {
     memberID:   r['Membership ID']  ||fallbackId,
     name:       r['Client name']    ||'Unknown',
@@ -184,13 +221,7 @@ async function handleCheckIn(memberIdInput) {
   try {
     const row=await lookupMember(id);
     if(!row){showLoading(false);showTerminalMessage(`Member ID "${id}" not found. Please check your ID or contact reception.`,'danger');return;}
-    const member={
-      memberID:  row['MemberID']||row['Member ID']||id,
-      name:      row['Name']||row['name']||'Unknown',
-      phone:     row['Phone']||row['phone']||'',
-      startDate: parseDate(row['StartDate']||row['Start Date']||row['startdate']||''),
-      expiryDate:parseDate(row['ExpiryDate']||row['Expiry Date']||row['expirydate']||'')
-    };
+    const member = extractMember(row, id);
     const days=daysRemaining(member.expiryDate);
     const statusType=getMembershipStatus(days);
     const statusLabel=statusType==='Warning'?'Active':statusType;

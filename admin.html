@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AK Pack — Admin</title>
+<link rel="stylesheet" href="style.css">
+<style>
+html,body{overflow:hidden;height:100%}
+
+/* ── PASSWORD GATE ── */
+.gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999}
+.gate-box{background:var(--card);border:1px solid var(--border2);border-radius:var(--radius);padding:36px;width:340px;text-align:center;animation:pIn .4s ease}
+@keyframes pIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+.gate-icon{font-size:40px;margin-bottom:12px}
+.gate-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.06em;margin-bottom:4px}
+.gate-sub{font-size:12px;color:var(--text2);margin-bottom:20px}
+.gate-input{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;text-align:center;letter-spacing:.1em;margin-bottom:12px;transition:border-color .2s}
+.gate-input:focus{border-color:var(--accent)}
+.gate-btn{width:100%;background:var(--accent);color:#000;border:none;padding:12px;border-radius:var(--radius-sm);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;box-shadow:0 0 16px var(--accent-glow)}
+.gate-btn:hover{background:#00e6ab;transform:translateY(-1px)}
+.gate-err{color:var(--red);font-size:12px;margin-top:8px;height:16px}
+@keyframes gShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.gate-shake{animation:gShake .4s ease}
+
+/* ── APP ── */
+.app{display:flex;height:100vh;position:relative;z-index:1}
+
+/* ── SIDEBAR ── */
+.sidebar{width:64px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;flex-shrink:0;z-index:10}
+.sb-logo{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 14px var(--accent-glow);margin-bottom:14px}
+.ni{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:18px;border:none;background:transparent;color:var(--text3)}
+.ni:hover{background:var(--card);color:var(--text)}
+.ni.on{background:rgba(0,200,150,.15);color:var(--accent);box-shadow:0 0 12px rgba(0,200,150,.12)}
+.sb-space{flex:1}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* ── TOPBAR ── */
+.topbar{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:rgba(10,22,40,.8);backdrop-filter:blur(12px);flex-shrink:0}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.06em}
+.tb-right{display:flex;align-items:center;gap:10px}
+.fpills{display:flex;gap:5px}
+.fp{padding:5px 11px;border-radius:20px;font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.06em;cursor:pointer;border:1px solid var(--border);color:var(--text3);background:transparent;transition:all .2s}
+.fp.on{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+.clk{font-family:'Barlow Condensed',sans-serif;font-size:15px;color:var(--text2);display:flex;align-items:center;gap:5px}
+.kbtn{background:var(--card);border:1px solid var(--border2);color:var(--text2);padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.kbtn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── PAGE CONTENT ── */
+.pg{flex:1;overflow-y:auto;padding:18px;display:none}
+.pg.on{display:block}
+
+/* ── DASHBOARD ── */
+/* NexusBank-style layout:
+   Left (2/3): graph card top | stats row bottom
+   Right (1/3): status cards + recent list stacked */
+.db-grid{
+  display:grid;
+  grid-template-columns:1fr 280px;
+  grid-template-rows:auto auto;
+  gap:14px;
+  height:calc(100vh - 60px - 36px);
+  min-height:0;
+}
+
+.db-left{display:flex;flex-direction:column;gap:14px;min-height:0}
+.db-right{display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto}
+
+/* Graph */
+.graph-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;flex:1;display:flex;flex-direction:column;min-height:0}
+.graph-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-shrink:0}
+.dpills{display:flex;gap:4px}
+.dp{padding:3px 8px;border-radius:20px;font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.06em;cursor:pointer;border:1px solid var(--border);color:var(--text3);background:transparent;transition:all .2s}
+.dp.on{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+.bar-chart{display:flex;align-items:flex-end;gap:5px;flex:1;min-height:0;padding-top:8px}
+.bw{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}
+.b{width:100%;border-radius:3px 3px 0 0;background:rgba(124,111,205,.2);transition:height .6s cubic-bezier(.34,1.56,.64,1);cursor:pointer;min-height:3px}
+.b.pk{background:var(--purple);box-shadow:0 0 10px rgba(124,111,205,.4)}
+.b:hover{background:var(--accent)}
+.bl{font-size:8px;color:var(--text3);font-family:'Barlow Condensed',sans-serif;white-space:nowrap}
+
+/* Stats row (check-ins, exits, peak) */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;flex-shrink:0}
+.st-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.st-val{font-family:'Bebas Neue',sans-serif;font-size:36px;line-height:1;margin-top:4px}
+
+/* Right col cards */
+.rc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;flex-shrink:0}
+.rc-card.teal-bg{background:var(--teal-card);border-color:rgba(0,200,150,.2)}
+.rc-val{font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;margin-top:2px}
+.rc-card.c-inside .rc-val{color:var(--blue)}
+.rc-card.c-active .rc-val{color:var(--accent)}
+.rc-card.c-warn .rc-val{color:var(--yellow)}
+.rc-card.c-exp .rc-val{color:var(--red)}
+
+/* Recent list */
+.recent-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;flex:1;display:flex;flex-direction:column;min-height:120px}
+.recent-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1;margin-top:8px}
+.ri{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--radius-sm);background:var(--bg2);border:1px solid var(--border)}
+.ri-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ri-info{flex:1;min-width:0}
+.ri-name{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri-meta{font-size:10px;color:var(--text3)}
+.ri-time{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--text3);flex-shrink:0}
+
+/* ── HISTORY ── */
+.h-toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.hi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;outline:none;transition:border-color .2s}
+.hi:focus{border-color:var(--accent)}
+.h-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.hc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:13px;transition:all .2s}
+.hc:hover{border-color:var(--border2);transform:translateY(-2px)}
+.hc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.hc-name{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700}
+.hc-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);padding:1px 0}
+
+/* ── MEMBERS ── */
+.m-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.mc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;transition:all .2s}
+.mc:hover{border-color:var(--border2);transform:translateY(-2px)}
+.mc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mc-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:17px;color:#000;flex-shrink:0}
+.mc-info{flex:1;margin-left:10px}
+.mc-name{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700}
+.mc-id{font-size:11px;color:var(--text3)}
+.mc-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);padding:2px 0}
+
+/* ── WORKOUT ── */
+.wk-toolbar{display:flex;gap:8px;margin-bottom:14px;align-items:center}
+.wt{width:100%;border-collapse:separate;border-spacing:0 5px}
+.wt th{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);text-align:left;padding:5px 10px}
+.wt td{background:var(--card);padding:10px;font-size:12px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.wt td:first-child{border-left:1px solid var(--border);border-radius:var(--radius-sm) 0 0 var(--radius-sm)}
+.wt td:last-child{border-right:1px solid var(--border);border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+
+/* ── SETTINGS ── */
+.sw{max-width:560px;display:flex;flex-direction:column;gap:16px}
+.ss{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.ss-title{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.sf{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.sl{font-size:11px;color:var(--text2);font-family:'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.si{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s;width:100%}
+.si:focus{border-color:var(--accent)}
+.sbtn{background:var(--accent);color:#000;border:none;padding:10px 22px;border-radius:var(--radius-sm);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .2s;box-shadow:0 0 14px var(--accent-glow)}
+.sbtn:hover{background:#00e6ab;transform:translateY(-1px)}
+
+/* ── NOTIF ── */
+.nf-list{display:flex;flex-direction:column;gap:10px}
+.nf-item{background:var(--card);border-radius:var(--radius);padding:14px;display:flex;align-items:center;gap:12px}
+
+/* ── MOBILE NAV ── */
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);padding:8px 0 10px;justify-content:space-around;z-index:100}
+.mn{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:5px 10px;border-radius:var(--radius-sm);transition:all .2s;border:none;background:none}
+.mn-icon{font-size:18px}
+.mn-label{font-size:8px;color:var(--text3);font-family:'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.mn.on .mn-label{color:var(--accent)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .db-grid{grid-template-columns:1fr 240px}
+}
+@media(max-width:900px){
+  .sidebar{display:none}
+  .mob-nav{display:flex}
+  .pg{padding-bottom:72px}
+  .db-grid{grid-template-columns:1fr;height:auto}
+  .db-right{display:grid;grid-template-columns:repeat(2,1fr);overflow-y:visible}
+  .recent-card{grid-column:1/-1}
+  .stats-row{grid-template-columns:1fr 1fr 1fr}
+}
+@media(max-width:600px){
+  .fpills{display:none}
+  .topbar{padding:0 14px}
+  .pg{padding:12px 12px 72px}
+  .db-right{grid-template-columns:1fr 1fr}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .h-grid{grid-template-columns:1fr 1fr}
+  .m-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-icon">🐺</div>
+    <div class="gate-title">Admin Access</div>
+    <div class="gate-sub">Enter your password to continue</div>
+    <input type="password" class="gate-input" id="gateInput" placeholder="••••••••••" onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="gate-btn" onclick="checkPw()">🔓 Enter</button>
+    <div class="gate-err" id="gateErr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="appWrap" style="display:none">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-logo">🐺</div>
+    <button class="ni on" onclick="showPage('dashboard',this)" title="Dashboard">🏠</button>
+    <button class="ni" onclick="showPage('history',this)" title="History">📋</button>
+    <button class="ni" onclick="showPage('members',this)" title="Members">👥</button>
+    <button class="ni" onclick="showPage('workout',this)" title="Training Plans">💪</button>
+    <div class="sb-space"></div>
+    <button class="ni" onclick="showPage('notifications',this)" title="Notifications">🔔</button>
+    <button class="ni" onclick="showPage('settings',this)" title="Settings">⚙️</button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="pgTitle">Live Monitor</div>
+      <div class="tb-right">
+        <div class="fpills" id="fpills">
+          <button class="fp on" onclick="setFP(this,'today')">Today</button>
+          <button class="fp" onclick="setFP(this,'week')">This Week</button>
+          <button class="fp" onclick="setFP(this,'month')">This Month</button>
+        </div>
+        <div class="clk"><span class="live-dot"></span><span id="clk">--:-- --</span></div>
+        <a href="index.html" class="kbtn">📱 Kiosk</a>
+        <button class="kbtn" onclick="logout()">🔒 Logout</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="pg on" id="pg-dashboard">
+      <div class="db-grid">
+        <div class="db-left">
+          <!-- Peak Hours Graph -->
+          <div class="graph-card">
+            <div class="graph-hdr">
+              <div class="card-title">📊 Peak Hours</div>
+              <div class="dpills">
+                <button class="dp on" onclick="setDay(this,'Mon')">Mon</button>
+                <button class="dp" onclick="setDay(this,'Tue')">Tue</button>
+                <button class="dp" onclick="setDay(this,'Wed')">Wed</button>
+                <button class="dp" onclick="setDay(this,'Thu')">Thu</button>
+                <button class="dp" onclick="setDay(this,'Fri')">Fri</button>
+                <button class="dp" onclick="setDay(this,'Sat')">Sat</button>
+              </div>
+            </div>
+            <div class="bar-chart" id="barChart"></div>
+          </div>
+          <!-- Stats Row -->
+          <div class="stats-row">
+            <div class="st-card">
+              <div class="card-title">☑️ Check-ins Today</div>
+              <div class="st-val" style="color:var(--accent)" id="ciCount">0</div>
+            </div>
+            <div class="st-card">
+              <div class="card-title">🚪 Exits Today</div>
+              <div class="st-val" style="color:var(--text2)" id="exCount">0</div>
+            </div>
+            <div class="st-card">
+              <div class="card-title">⏰ Peak Hour</div>
+              <div class="st-val" style="color:var(--yellow)" id="pkHour">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COL -->
+        <div class="db-right">
+          <div class="rc-card c-inside teal-bg">
+            <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">👥 Inside Now <span class="live-dot"></span></div>
+            <div class="rc-val" id="inCount">0</div>
+            <div style="font-size:10px;color:var(--text2);margin-top:2px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase">members in gym</div>
+          </div>
+          <div class="rc-card c-active">
+            <div class="card-title">🟢 Active Members</div>
+            <div class="rc-val" id="acCount">—</div>
+            <div style="font-size:10px;color:var(--text2);margin-top:2px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase">valid memberships</div>
+          </div>
+          <div class="rc-card c-warn">
+            <div class="card-title">🟡 Expiring Soon</div>
+            <div class="rc-val" id="waCount">—</div>
+            <div style="font-size:10px;color:var(--text2);margin-top:2px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase">within 7 days</div>
+          </div>
+          <div class="rc-card c-exp">
+            <div class="card-title">🔴 Expired</div>
+            <div class="rc-val" id="epCount">—</div>
+            <div style="font-size:10px;color:var(--text2);margin-top:2px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase">need renewal</div>
+          </div>
+          <div class="recent-card">
+            <div class="card-title">⚡ Recent Activity</div>
+            <div class="recent-list" id="recentList"><div style="color:var(--text3);font-size:11px;text-align:center;padding:12px">Loading...</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="pg" id="pg-history">
+      <div class="h-toolbar">
+        <input type="date" class="hi" id="hDate" onchange="filterH()">
+        <input type="text" class="hi" id="hSearch" placeholder="Name or ID..." oninput="filterH()" style="flex:1;min-width:120px">
+        <select class="hi" id="hStatus" onchange="filterH()">
+          <option value="">All</option><option value="Entry">Entry</option><option value="Exit">Exit</option>
+        </select>
+      </div>
+      <div class="h-grid" id="hGrid"><div style="color:var(--text3);text-align:center;padding:40px;grid-column:1/-1">Loading...</div></div>
+    </div>
+
+    <!-- MEMBERS -->
+    <div class="pg" id="pg-members">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input type="text" class="hi" id="mSearch" placeholder="Search members..." oninput="filterM()" style="flex:1">
+        <select class="hi" id="mFilter" onchange="filterM()">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="warning">Expiring</option>
+          <option value="expired">Expired</option>
+        </select>
+      </div>
+      <div class="m-grid" id="mGrid"><div style="color:var(--text3);text-align:center;padding:40px;grid-column:1/-1">Loading...</div></div>
+    </div>
+
+    <!-- WORKOUT -->
+    <div class="pg" id="pg-workout">
+      <div class="wk-toolbar">
+        <input type="text" class="hi" id="wSearch" placeholder="Member ID or Name..." oninput="filterW()" style="width:220px">
+        <select class="hi" id="wPlan" onchange="filterW()">
+          <option value="">All Plans</option>
+          <option value="Beginner">Beginner</option>
+          <option value="Intermediate">Intermediate</option>
+          <option value="Advanced">Advanced</option>
+          <option value="Custom">Custom</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="wt">
+          <thead><tr><th>Member</th><th>Plan</th><th>Day</th><th>Exercise</th><th>Sets</th><th>Reps</th><th>Rest</th><th>Muscle</th><th>Notes</th></tr></thead>
+          <tbody id="wBody"><tr><td colspan="9" style="color:var(--text3);text-align:center;padding:40px">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="pg" id="pg-notifications">
+      <div class="nf-list" id="nfList"><div style="color:var(--text3);text-align:center;padding:40px">Loading...</div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="pg" id="pg-settings">
+      <div class="sw">
+        <div class="ss">
+          <div class="ss-title">⚙️ Google Sheets Config</div>
+          <div class="sf"><div class="sl">Spreadsheet ID</div><input type="text" class="si" id="siSheetId" placeholder="Your Google Sheet ID"></div>
+          <div class="sf"><div class="sl">Apps Script URL</div><input type="text" class="si" id="siScript" placeholder="Your Apps Script Web App URL"></div>
+          <button class="sbtn" onclick="saveSettings()">💾 Save Config</button>
+        </div>
+        <div class="ss">
+          <div class="ss-title">🔐 Admin Password</div>
+          <div class="sf"><div class="sl">New Password</div><input type="password" class="si" id="siPw" placeholder="Enter new password"></div>
+          <button class="sbtn" onclick="savePw()">🔒 Update Password</button>
+        </div>
+        <div class="ss">
+          <div class="ss-title">📱 Quick Links</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a href="index.html" class="kbtn" style="padding:10px 14px">📱 Kiosk</a>
+            <a href="live.html" class="kbtn" style="padding:10px 14px">🔴 Live Feed</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE NAV -->
+<div class="mob-nav">
+  <button class="mn on" onclick="showPage('dashboard',this)"><span class="mn-icon">🏠</span><span class="mn-label">Dashboard</span></button>
+  <button class="mn" onclick="showPage('history',this)"><span class="mn-icon">📋</span><span class="mn-label">History</span></button>
+  <button class="mn" onclick="showPage('members',this)"><span class="mn-icon">👥</span><span class="mn-label">Members</span></button>
+  <button class="mn" onclick="showPage('workout',this)"><span class="mn-icon">💪</span><span class="mn-label">Workout</span></button>
+  <button class="mn" onclick="showPage('settings',this)"><span class="mn-icon">⚙️</span><span class="mn-label">Settings</span></button>
+</div>
+
+<div class="toast-container" id="tc"></div>
+
+<script>
+const SHEET_ID=()=>localStorage.getItem('ak_sheet_id')||'1Vo8k_hEm6OrJt-Bqf1T8vxcMH4_U9DoXkxsJPt9lKsw';
+const SCRIPT_URL=()=>localStorage.getItem('ak_script_url')||'https://script.google.com/macros/s/AKfycbz02njZU6nztUqGbq1mPlGz9LkZyrRAnew6sTsD73hgQ5i2hFFipA5lwPcHEsShbNcN/exec';
+const DEF_PW='akpack2025';
+
+/* ── PASSWORD ── */
+function checkPw(){
+  const val=document.getElementById('gateInput').value;
+  const stored=localStorage.getItem('ak_admin_pw')||DEF_PW;
+  if(val===stored){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('appWrap').style.display='flex';
+    sessionStorage.setItem('ak_auth','1');
+    initApp();
+  }else{
+    document.getElementById('gateErr').textContent='Incorrect password';
+    document.getElementById('gate-box'||document.querySelector('.gate-box')).classList.add('gate-shake');
+    setTimeout(()=>document.querySelector('.gate-box').classList.remove('gate-shake'),400);
+    document.getElementById('gateInput').value='';
+  }
+}
+function logout(){sessionStorage.removeItem('ak_auth');location.reload();}
+
+// Check if already authed this session
+if(sessionStorage.getItem('ak_auth')==='1'){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('appWrap').style.display='flex';
+}
+
+document.getElementById('gateInput').addEventListener('keydown',e=>{if(e.key==='Enter')checkPw();});
+
+/* ── CLOCK ── */
+function tick(){
+  const n=new Date();let h=n.getHours();const m=String(n.getMinutes()).padStart(2,'0');
+  const ap=h>=12?'PM':'AM';h=h%12||12;
+  document.getElementById('clk').textContent=`${h}:${m} ${ap}`;
+}
+tick();setInterval(tick,1000);
+
+/* ── INIT ── */
+function initApp(){
+  document.getElementById('siSheetId').value=SHEET_ID();
+  document.getElementById('siScript').value=localStorage.getItem('ak_script_url')||'';
+  renderChart('Mon');
+  loadDashboard();
+  setInterval(loadDashboard,8000);
+}
+
+/* ── PAGE NAV ── */
+const titles={dashboard:'Live Monitor',history:'Attendance History',members:'Members',workout:'Training Plans',notifications:'Notifications',settings:'Settings'};
+function showPage(name,el){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ni,.mn').forEach(n=>n.classList.remove('on'));
+  document.getElementById('pg-'+name).classList.add('on');
+  if(el)el.classList.add('on');
+  document.getElementById('pgTitle').textContent=titles[name]||name;
+  document.getElementById('fpills').style.display=name==='dashboard'?'flex':'none';
+  if(name==='history')loadHistory();
+  if(name==='members')loadMembers();
+  if(name==='workout')loadWorkout();
+  if(name==='notifications')loadNotifs();
+}
+
+/* ── FILTER PILLS ── */
+function setFP(el,p){document.querySelectorAll('.fp').forEach(f=>f.classList.remove('on'));el.classList.add('on');loadDashboard(p);}
+
+/* ── BAR CHART ── */
+const HD={Mon:[2,5,8,12,9,7,6,8,10,14,18,22,19,15,12,8],Tue:[1,4,7,10,8,6,5,7,9,13,17,20,18,14,11,7],Wed:[3,6,9,13,10,8,7,9,11,15,19,23,20,16,13,9],Thu:[2,5,8,11,9,7,6,8,10,14,18,21,19,15,12,8],Fri:[4,7,10,14,11,9,8,10,12,16,20,24,21,17,14,10],Sat:[8,14,20,18,15,12,10,8,7,6,5,4,3,2,1,0]};
+const HL=['6A','7A','8A','9A','10A','11A','12P','1P','2P','3P','4P','5P','6P','7P','8P','9P'];
+function renderChart(day){
+  const d=HD[day]||HD.Mon;const mx=Math.max(...d);
+  const c=document.getElementById('barChart');c.innerHTML='';
+  const pkIdx=d.indexOf(mx);
+  document.getElementById('pkHour').textContent=HL[pkIdx]||'—';
+  d.forEach((v,i)=>{
+    const w=document.createElement('div');w.className='bw';
+    const b=document.createElement('div');b.className='b'+(v===mx?' pk':'');
+    b.style.height=`${(v/mx)*100}%`;
+    const l=document.createElement('div');l.className='bl';
+    l.textContent=i%2===0?HL[i]:'';
+    w.appendChild(b);w.appendChild(l);c.appendChild(w);
+  });
+}
+function setDay(el,day){document.querySelectorAll('.dp').forEach(p=>p.classList.remove('on'));el.classList.add('on');renderChart(day);}
+
+/* ── DASHBOARD DATA ── */
+function loadDashboard(period='today'){
+  const sid=SHEET_ID();
+  if(!sid){loadDashboardDemo();return;}
+  const cb='akDb_'+Date.now();
+  window[cb]=function(data){
+    try{
+      const rows=data.table.rows||[];
+      const today=new Date().toLocaleDateString('en-GB');
+      let ci=0,ex=0;const ins=new Set();const recent=[];
+      rows.slice().reverse().forEach(r=>{
+        const dt=r.c[0]?.f||String(r.c[0]?.v||'');
+        const dStr=dt.includes('-')?reverseDateStr(dt):dt;
+        const st=r.c[4]?.v||'';
+        const id=String(r.c[2]?.v||'');
+        const name=r.c[3]?.v||'—';
+        const time=r.c[1]?.v||'—';
+        if(dStr===today){
+          if(st==='Entry'){ci++;ins.add(id);}
+          if(st==='Exit'){ex++;ins.delete(id);}
+          if(recent.length<8)recent.push({name,time,status:st,id});
+        }
+      });
+      document.getElementById('ciCount').textContent=ci;
+      document.getElementById('exCount').textContent=ex;
+      document.getElementById('inCount').textContent=ins.size;
+      renderRecent(recent);
+      console.log('[AK Stats]',{ci,ex,inside:ins.size});
+    }catch(e){loadDashboardDemo();}
+    delete window[cb];
+  };
+  const s=document.createElement('script');
+  s.src=`https://docs.google.com/spreadsheets/d/${sid}/gviz/tq?sheet=Attendance&tq=select%20*&tqx=responseHandler:${cb}`;
+  document.head.appendChild(s);
+  loadMemberCounts();
+}
+
+function reverseDateStr(s){const p=s.split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s;}
+
+function loadDashboardDemo(){
+  document.getElementById('ciCount').textContent='24';
+  document.getElementById('exCount').textContent='18';
+  document.getElementById('inCount').textContent='6';
+  document.getElementById('acCount').textContent='142';
+  document.getElementById('waCount').textContent='8';
+  document.getElementById('epCount').textContent='5';
+  renderRecent([
+    {name:'John Mathew',time:'06:01 PM',status:'Entry',id:'42'},
+    {name:'Sara Ahmed',time:'05:58 PM',status:'Exit',id:'17'},
+    {name:'Mike Johnson',time:'05:45 PM',status:'Entry',id:'31'},
+    {name:'Riya Patel',time:'05:30 PM',status:'Entry',id:'8'},
+    {name:'Omar Hassan',time:'05:15 PM',status:'Exit',id:'55'},
+  ]);
+}
+
+function renderRecent(items){
+  const l=document.getElementById('recentList');
+  if(!items.length){l.innerHTML='<div style="color:var(--text3);text-align:center;padding:16px;font-size:11px">No activity today</div>';return;}
+  l.innerHTML=items.map(it=>`
+    <div class="ri">
+      <div class="ri-dot" style="background:${it.status==='Entry'?'var(--accent)':'var(--red)'}"></div>
+      <div class="ri-info"><div class="ri-name">${it.name}</div><div class="ri-meta">ID: ${it.id}</div></div>
+      <div class="ri-time">${it.time}</div>
+    </div>`).join('');
+}
+
+function loadMemberCounts(){
+  const sid=SHEET_ID();if(!sid)return;
+  const cb='akMC_'+Date.now();
+  window[cb]=function(data){
+    try{
+      const rows=data.table.rows||[];
+      let ac=0,wa=0,ep=0;
+      rows.forEach(r=>{
+        const exp=r.c[3]?.f||String(r.c[3]?.v||'');
+        const p=exp.split('/');
+        if(p.length===3){
+          const ed=new Date(p[2],p[1]-1,p[0]);
+          const diff=Math.ceil((ed-new Date())/864e5);
+          if(diff<=0)ep++;else if(diff<=7)wa++;else ac++;
+        }
+      });
+      document.getElementById('acCount').textContent=ac;
+      document.getElementById('waCount').textContent=wa;
+      document.getElementById('epCount').textContent=ep;
+    }catch(e){}
+    delete window[cb];
+  };
+  const s=document.createElement('script');
+  s.src=`https://docs.google.com/spreadsheets/d/${sid}/gviz/tq?sheet=Members&tq=select%20*&tqx=responseHandler:${cb}`;
+  document.head.appendChild(s);
+}
+
+/* ── HISTORY ── */
+let allH=[];
+function loadHistory(){
+  const sid=SHEET_ID();if(!sid){loadHistoryDemo();return;}
+  const cb='akH_'+Date.now();
+  window[cb]=function(data){
+    try{
+      allH=(data.table.rows||[]).slice().reverse().map(r=>({
+        date:r.c[0]?.f||String(r.c[0]?.v||'—'),
+        time:r.c[1]?.v||'—',id:r.c[2]?.v||'—',
+        name:r.c[3]?.v||'—',status:r.c[4]?.v||'—'
+      }));renderH(allH);
+    }catch(e){loadHistoryDemo();}
+    delete window[cb];
+  };
+  const s=document.createElement('script');
+  s.src=`https://docs.google.com/spreadsheets/d/${sid}/gviz/tq?sheet=Attendance&tq=select%20*&tqx=responseHandler:${cb}`;
+  document.head.appendChild(s);
+}
+function loadHistoryDemo(){
+  allH=[
+    {date:'12/03/2026',time:'06:01 PM',id:'42',name:'John Mathew',status:'Entry'},
+    {date:'12/03/2026',time:'05:58 PM',id:'17',name:'Sara Ahmed',status:'Exit'},
+    {date:'11/03/2026',time:'07:00 AM',id:'42',name:'John Mathew',status:'Entry'},
+  ];renderH(allH);
+}
+function renderH(records){
+  const g=document.getElementById('hGrid');
+  if(!records.length){g.innerHTML='<div style="color:var(--text3);text-align:center;padding:40px;grid-column:1/-1">No records found</div>';return;}
+  g.innerHTML=records.map(r=>`
+    <div class="hc" style="border-color:${r.status==='Entry'?'rgba(0,200,150,.2)':'rgba(224,85,85,.15)'}">
+      <div class="hc-top"><div class="hc-name">${r.name}</div><span class="badge ${r.status==='Entry'?'badge-green':'badge-red'}">${r.status}</span></div>
+      <div class="hc-row"><span>ID</span><span>#${r.id}</span></div>
+      <div class="hc-row"><span>Date</span><span>${r.date}</span></div>
+      <div class="hc-row"><span>Time</span><span>${r.time}</span></div>
+    </div>`).join('');
+}
+function filterH(){
+  const dv=document.getElementById('hDate').value;
+  const sv=document.getElementById('hSearch').value.toLowerCase();
+  const stv=document.getElementById('hStatus').value;
+  renderH(allH.filter(r=>{
+    const md=!dv||r.date===new Date(dv).toLocaleDateString('en-GB');
+    const ms=!sv||r.name.toLowerCase().includes(sv)||String(r.id).includes(sv);
+    const mst=!stv||r.status===stv;
+    return md&&ms&&mst;
+  }));
+}
+
+/* ── MEMBERS ── */
+let allM=[];
+function loadMembers(){
+  const sid=SHEET_ID();if(!sid){loadMembersDemo();return;}
+  const cb='akMembers_'+Date.now();
+  window[cb]=function(data){
+    try{
+      allM=(data.table.rows||[]).map(r=>{
+        const exp=r.c[3]?.f||String(r.c[3]?.v||'—');
+        const p=exp.split('/');let sc='active',dl='—';
+        if(p.length===3){
+          const ed=new Date(p[2],p[1]-1,p[0]);
+          const diff=Math.ceil((ed-new Date())/864e5);
+          dl=diff;if(diff<=0)sc='expired';else if(diff<=7)sc='warning';
+        }
+        return{name:r.c[0]?.v||'—',contact:r.c[1]?.v||'—',pkg:r.c[2]?.v||'—',exp,id:r.c[6]?.v||'—',sc,dl};
+      });renderM(allM);
+    }catch(e){loadMembersDemo();}
+    delete window[cb];
+  };
+  const s=document.createElement('script');
+  s.src=`https://docs.google.com/spreadsheets/d/${sid}/gviz/tq?sheet=Members&tq=select%20*&tqx=responseHandler:${cb}`;
+  document.head.appendChild(s);
+}
+function loadMembersDemo(){
+  allM=[
+    {name:'John Mathew',contact:'+971 50 123 4567',pkg:'Monthly',exp:'31/03/2026',id:'42',sc:'active',dl:20},
+    {name:'Sara Ahmed',contact:'+971 55 987 6543',pkg:'Monthly',exp:'15/03/2026',id:'17',sc:'warning',dl:4},
+    {name:'Mike Johnson',contact:'+971 52 456 7890',pkg:'Quarterly',exp:'30/06/2026',id:'31',sc:'active',dl:111},
+    {name:'Riya Patel',contact:'+971 56 321 0987',pkg:'Monthly',exp:'05/03/2026',id:'8',sc:'expired',dl:-6},
+  ];renderM(allM);
+}
+const SC={active:'var(--accent)',warning:'var(--yellow)',expired:'var(--red)'};
+const SB={active:'badge-green',warning:'badge-yellow',expired:'badge-red'};
+function renderM(members){
+  const g=document.getElementById('mGrid');
+  if(!members.length){g.innerHTML='<div style="color:var(--text3);text-align:center;padding:40px;grid-column:1/-1">No members found</div>';return;}
+  g.innerHTML=members.map(m=>`
+    <div class="mc" style="border-color:${SC[m.sc]}22">
+      <div class="mc-top">
+        <div style="display:flex;align-items:center;flex:1">
+          <div class="mc-av">${m.name.charAt(0)}</div>
+          <div class="mc-info"><div class="mc-name">${m.name}</div><div class="mc-id">ID: #${m.id}</div></div>
+        </div>
+        <span class="badge ${SB[m.sc]}">${m.sc}</span>
+      </div>
+      <div class="mc-row"><span>Package</span><span>${m.pkg}</span></div>
+      <div class="mc-row"><span>Expiry</span><span>${m.exp}</span></div>
+      <div class="mc-row"><span>Days Left</span><span style="color:${SC[m.sc]}">${m.dl>0?m.dl+' days':'EXPIRED'}</span></div>
+      <div class="mc-row"><span>Contact</span><span>${m.contact}</span></div>
+    </div>`).join('');
+}
+function filterM(){
+  const sv=document.getElementById('mSearch').value.toLowerCase();
+  const fv=document.getElementById('mFilter').value;
+  renderM(allM.filter(m=>(!sv||m.name.toLowerCase().includes(sv)||String(m.id).includes(sv))&&(!fv||m.sc===fv)));
+}
+
+/* ── WORKOUT ── */
+let allW=[];
+function loadWorkout(){
+  const sid=SHEET_ID();if(!sid){loadWorkoutDemo();return;}
+  const cb='akW_'+Date.now();
+  window[cb]=function(data){
+    try{
+      allW=(data.table.rows||[]).map(r=>({
+        mid:r.c[0]?.v||'—',name:r.c[1]?.v||'—',plan:r.c[2]?.v||'—',
+        day:r.c[4]?.v||'—',ex:r.c[5]?.v||'—',sets:r.c[6]?.v||'—',
+        reps:r.c[7]?.v||'—',rest:r.c[8]?.v||'—',muscle:r.c[9]?.v||'—',notes:r.c[10]?.v||''
+      }));renderW(allW);
+    }catch(e){loadWorkoutDemo();}
+    delete window[cb];
+  };
+  const s=document.createElement('script');
+  s.src=`https://docs.google.com/spreadsheets/d/${sid}/gviz/tq?sheet=Workouts&tq=select%20*&tqx=responseHandler:${cb}`;
+  document.head.appendChild(s);
+}
+function loadWorkoutDemo(){
+  allW=[
+    {mid:'42',name:'John Mathew',plan:'Intermediate',day:'Monday',ex:'Bench Press',sets:'4',reps:'8-12',rest:'90s',muscle:'Chest',notes:'Keep form tight'},
+    {mid:'17',name:'Sara Ahmed',plan:'Beginner',day:'Tuesday',ex:'Squats',sets:'3',reps:'15',rest:'60s',muscle:'Legs',notes:'Focus on depth'},
+  ];renderW(allW);
+}
+const PB={Beginner:'badge-green',Intermediate:'badge-yellow',Advanced:'badge-red',Custom:'badge-blue'};
+function renderW(wks){
+  const b=document.getElementById('wBody');
+  if(!wks.length){b.innerHTML='<tr><td colspan="9" style="color:var(--text3);text-align:center;padding:40px">No workouts found</td></tr>';return;}
+  b.innerHTML=wks.map(w=>`<tr>
+    <td><strong>${w.name}</strong><br><span style="color:var(--text3);font-size:10px">#${w.mid}</span></td>
+    <td><span class="badge ${PB[w.plan]||'badge-blue'}">${w.plan}</span></td>
+    <td>${w.day}</td><td>${w.ex}</td><td>${w.sets}</td><td>${w.reps}</td><td>${w.rest}</td><td>${w.muscle}</td>
+    <td style="color:var(--text3)">${w.notes}</td></tr>`).join('');
+}
+function filterW(){
+  const sv=document.getElementById('wSearch').value.toLowerCase();
+  const pv=document.getElementById('wPlan').value;
+  renderW(allW.filter(w=>(!sv||w.name.toLowerCase().includes(sv)||String(w.mid).includes(sv))&&(!pv||w.plan===pv)));
+}
+
+/* ── NOTIFICATIONS ── */
+function loadNotifs(){
+  const sid=SHEET_ID();if(!sid){renderNotifs([{name:'Sara Ahmed',id:'17',msg:'Expiring in 4 days',type:'yellow'},{name:'Riya Patel',id:'8',msg:'Expired 6 days ago',type:'red'}]);return;}
+  loadMemberCounts();
+  const cb='akNf_'+Date.now();
+  window[cb]=function(data){
+    try{
+      const notifs=[];
+      (data.table.rows||[]).forEach(r=>{
+        const name=r.c[0]?.v||'—';const id=r.c[6]?.v||'—';
+        const exp=r.c[3]?.f||String(r.c[3]?.v||'');
+        const p=exp.split('/');
+        if(p.length===3){
+          const ed=new Date(p[2],p[1]-1,p[0]);
+          const diff=Math.ceil((ed-new Date())/864e5);
+          if(diff<=0)notifs.push({name,id,msg:`Expired ${Math.abs(diff)} days ago`,type:'red'});
+          else if(diff<=7)notifs.push({name,id,msg:`Expiring in ${diff} days`,type:'yellow'});
+        }
+      });
+      renderNotifs(notifs);
+    }catch(e){}
+    delete window[cb];
+  };
+  const s=document.createElement('script');
+  s.src=`https://docs.google.com/spreadsheets/d/${sid}/gviz/tq?sheet=Members&tq=select%20*&tqx=responseHandler:${cb}`;
+  document.head.appendChild(s);
+}
+function renderNotifs(items){
+  const l=document.getElementById('nfList');
+  if(!items.length){l.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">🎉 All memberships are good!</div>';return;}
+  const C={red:'var(--red)',yellow:'var(--yellow)'};
+  l.innerHTML=items.map(n=>`
+    <div class="nf-item" style="border:1px solid ${C[n.type]}33">
+      <div style="font-size:20px">${n.type==='red'?'🔴':'🟡'}</div>
+      <div style="flex:1"><div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700">${n.name}</div><div style="font-size:11px;color:${C[n.type]};margin-top:2px">${n.msg}</div></div>
+      <div style="font-size:11px;color:var(--text3)">ID: #${n.id}</div>
+    </div>`).join('');
+}
+
+/* ── SETTINGS ── */
+function saveSettings(){
+  localStorage.setItem('ak_sheet_id',document.getElementById('siSheetId').value.trim());
+  localStorage.setItem('ak_script_url',document.getElementById('siScript').value.trim());
+  toast('✅ Config saved! Refresh to apply.','success');
+}
+function savePw(){
+  const pw=document.getElementById('siPw').value;
+  if(!pw){toast('Enter a password','error');return;}
+  localStorage.setItem('ak_admin_pw',pw);
+  toast('✅ Password updated!','success');
+}
+
+function toast(msg,type='success'){const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;document.getElementById('tc').appendChild(t);setTimeout(()=>t.remove(),3000);}
+
+// Init if already authed
+if(sessionStorage.getItem('ak_auth')==='1')initApp();
+</script>
+</body>
+</html>

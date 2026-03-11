@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AK Pack — Member</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+.status-glow{position:fixed;top:-150px;right:-150px;width:450px;height:450px;border-radius:50%;filter:blur(90px);opacity:.08;pointer-events:none;transition:background .4s}
+
+.page{flex:1;display:flex;flex-direction:column;padding:14px;gap:12px;animation:pIn .5s cubic-bezier(.34,1.56,.64,1);position:relative;z-index:1;overflow:hidden}
+@keyframes pIn{from{opacity:0;transform:scale(.96) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.back{display:flex;align-items:center;gap:5px;color:var(--text2);text-decoration:none;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:none;border:none;cursor:pointer;transition:color .2s}
+.back:hover{color:var(--text)}
+
+.cdwrap{display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed',sans-serif;font-size:12px;color:var(--text3);letter-spacing:.06em}
+.cdring{width:26px;height:26px;position:relative}
+.cdring svg{transform:rotate(-90deg)}
+.cdring circle{fill:none;stroke-width:2.5}
+.cdring .cbg{stroke:var(--border2)}
+.cdring .cprog{stroke:var(--accent);transition:stroke-dashoffset 1s linear}
+.cdnum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:12px;color:var(--accent)}
+
+.status-strip{height:3px;border-radius:2px;width:100%;flex-shrink:0}
+.status-strip.active{background:linear-gradient(90deg,var(--accent),rgba(0,200,150,.2))}
+.status-strip.warning{background:linear-gradient(90deg,var(--yellow),rgba(245,200,66,.2))}
+.status-strip.expired{background:linear-gradient(90deg,var(--red),rgba(224,85,85,.2))}
+
+/* ROW 1 */
+.row1{display:grid;grid-template-columns:2fr 1fr;gap:12px;flex:1;min-height:0}
+
+.details-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.greeting{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.05em;line-height:1}
+.greeting span{color:var(--accent)}
+.sub-line{font-size:12px;color:var(--text2);margin-top:-4px}
+.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1}
+.det-item{display:flex;flex-direction:column;gap:2px}
+.det-lbl{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif}
+.det-val{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;color:var(--text)}
+
+.cal-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:7px;overflow:hidden}
+.cal-hdr{display:flex;align-items:center;justify-content:space-between}
+.cal-month{font-family:'Bebas Neue',sans-serif;font-size:12px;color:var(--text3);letter-spacing:.05em}
+.cal-dh{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center}
+.cal-dh-l{font-size:7px;color:var(--text3);font-family:'Barlow Condensed',sans-serif;padding:1px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;flex:1}
+.cd{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:8px;font-family:'Barlow Condensed',sans-serif;font-weight:600;color:var(--text3);transition:all .2s}
+.cd.att{background:rgba(0,200,150,.18);color:var(--accent);border:1px solid rgba(0,200,150,.25)}
+.cd.tod{background:var(--accent);color:#000;box-shadow:0 0 8px rgba(0,200,150,.4)}
+.cd.mt{opacity:0}
+
+/* ROW 2 */
+.row2{display:grid;grid-template-columns:1fr 2fr;gap:12px;flex-shrink:0}
+
+.timer-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.timer-lbl{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text2)}
+.ring-wrap{position:relative;width:80px;height:80px}
+.ring-wrap svg{transform:rotate(-90deg);width:100%;height:100%}
+.ring-wrap circle{fill:none;stroke-width:5}
+.ring-bg{stroke:var(--border2)}
+.ring-prog{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+.timer-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.timer-time{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.05em;line-height:1}
+.timer-sub{font-size:7px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif}
+.timer-status{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text3);font-family:'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+
+.stats-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:center}
+.st-item{display:flex;flex-direction:column;gap:2px}
+.st-lbl{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif}
+.st-val{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.03em;line-height:1;color:var(--accent)}
+.st-sub{font-size:10px;color:var(--text2);font-family:'Barlow Condensed',sans-serif}
+
+@media(max-width:600px){
+  .row1{grid-template-columns:1fr}
+  .row2{grid-template-columns:1fr 1fr}
+  .greeting{font-size:22px}
+}
+@media(max-height:520px){
+  .page{gap:8px;padding:10px}
+  .row1{grid-template-columns:2fr 1fr}
+  .row2{flex-shrink:0}
+  .greeting{font-size:20px}
+  .ring-wrap{width:64px;height:64px}
+  .timer-time{font-size:15px}
+}
+</style>
+</head>
+<body>
+<div class="status-glow" id="sGlow"></div>
+
+<div class="page">
+  <div class="topbar">
+    <a class="back" href="index.html">← Back</a>
+    <div class="cdwrap">
+      <span>Auto close</span>
+      <div class="cdring">
+        <svg viewBox="0 0 26 26">
+          <circle class="cbg" cx="13" cy="13" r="10"/>
+          <circle class="cprog" id="cdCirc" cx="13" cy="13" r="10" stroke-dasharray="62.8" stroke-dashoffset="0"/>
+        </svg>
+        <div class="cdnum" id="cdNum">5</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-strip" id="sStrip"></div>
+
+  <!-- ROW 1 -->
+  <div class="row1">
+    <div class="details-card">
+      <div>
+        <div class="greeting">Welcome, <span id="mName">—</span>! 🐺</div>
+        <div class="sub-line" id="mSub">Loading details...</div>
+      </div>
+      <div class="det-grid">
+        <div class="det-item"><div class="det-lbl">Member ID</div><div class="det-val" id="dId">—</div></div>
+        <div class="det-item"><div class="det-lbl">Package</div><div class="det-val" id="dPkg">—</div></div>
+        <div class="det-item"><div class="det-lbl">Expiry</div><div class="det-val" id="dExp">—</div></div>
+        <div class="det-item"><div class="det-lbl">Days Left</div><div class="det-val" id="dDays">—</div></div>
+        <div class="det-item"><div class="det-lbl">Status</div><div class="det-val" id="dStatus">—</div></div>
+        <div class="det-item"><div class="det-lbl">Contact</div><div class="det-val" id="dContact">—</div></div>
+      </div>
+    </div>
+
+    <div class="cal-card">
+      <div class="cal-hdr">
+        <div class="card-title">📅 Attendance</div>
+        <div class="cal-month" id="calMonth">—</div>
+      </div>
+      <div class="cal-dh">
+        <div class="cal-dh-l">M</div><div class="cal-dh-l">T</div><div class="cal-dh-l">W</div>
+        <div class="cal-dh-l">T</div><div class="cal-dh-l">F</div><div class="cal-dh-l">S</div><div class="cal-dh-l">S</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </div>
+
+  <!-- ROW 2 -->
+  <div class="row2">
+    <div class="timer-card">
+      <div class="timer-lbl">🕐 Session</div>
+      <div class="ring-wrap">
+        <svg viewBox="0 0 80 80">
+          <circle class="ring-bg" cx="40" cy="40" r="34"/>
+          <circle class="ring-prog" id="timerRing" cx="40" cy="40" r="34" stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
+        </svg>
+        <div class="timer-center">
+          <div class="timer-time" id="timerDisp">00:00</div>
+          <div class="timer-sub">Session</div>
+        </div>
+      </div>
+      <div class="timer-status"><span class="live-dot" id="tDot"></span><span id="tStatus">Recording</span></div>
+    </div>
+
+    <div class="stats-card">
+      <div class="st-item"><div class="st-lbl">🔥 Streak</div><div class="st-val" id="sStreak">0</div><div class="st-sub">days in a row</div></div>
+      <div class="st-item"><div class="st-lbl">📅 This Month</div><div class="st-val" id="sMonth">0</div><div class="st-sub">visits</div></div>
+      <div class="st-item"><div class="st-lbl">🏋️ Total Visits</div><div class="st-val" id="sTotal">0</div><div class="st-sub">all time</div></div>
+      <div class="st-item"><div class="st-lbl">⏱ Avg Session</div><div class="st-val" id="sAvg">—</div><div class="st-sub">minutes</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="tc"></div>
+
+<script>
+const SHEET_ID=localStorage.getItem('ak_sheet_id')||'1Vo8k_hEm6OrJt-Bqf1T8vxcMH4_U9DoXkxsJPt9lKsw';
+const SCRIPT_URL=localStorage.getItem('ak_script_url')||'https://script.google.com/macros/s/AKfycbz02njZU6nztUqGbq1mPlGz9LkZyrRAnew6sTsD73hgQ5i2hFFipA5lwPcHEsShbNcN/exec';
+const memberId=sessionStorage.getItem('ak_member_id')||'';
+const mode=sessionStorage.getItem('ak_mode')||'entry';
+if(!memberId)location.href='index.html';
+
+/* COUNTDOWN */
+let cd=5;const circ=62.8;
+function tickCD(){
+  document.getElementById('cdCirc').style.strokeDashoffset=circ*(1-cd/5);
+  document.getElementById('cdNum').textContent=cd;
+  cd--;if(cd<0)location.href='index.html';
+}
+tickCD();const cdInt=setInterval(tickCD,1000);
+
+/* SESSION TIMER */
+const GOAL=3600;let secs=0;let sInt;
+const ringEl=document.getElementById('timerRing');
+const C=213.6;
+function startTimer(){
+  if(mode==='exit'){
+    const et=sessionStorage.getItem('ak_entry_'+memberId);
+    if(et){secs=Math.floor((Date.now()-parseInt(et))/1000);}
+    updateTimer();
+    document.getElementById('tDot').style.animation='none';
+    document.getElementById('tDot').style.opacity='.4';
+    document.getElementById('tStatus').textContent='Session ended';
+  }else{
+    sessionStorage.setItem('ak_entry_'+memberId,Date.now());
+    secs=0;updateTimer();
+    sInt=setInterval(()=>{secs++;updateTimer();},1000);
+  }
+}
+function updateTimer(){
+  const m=Math.floor(secs/60),s=secs%60;
+  document.getElementById('timerDisp').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const off=C*(1-Math.min(secs/GOAL,1));
+  ringEl.style.strokeDashoffset=off;
+}
+
+/* CALENDAR */
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function renderCal(attDays){
+  const now=new Date();const yr=now.getFullYear();const mo=now.getMonth();
+  document.getElementById('calMonth').textContent=MONTHS[mo];
+  const first=new Date(yr,mo,1).getDay();
+  const dim=new Date(yr,mo+1,0).getDate();
+  const off=(first+6)%7;
+  const grid=document.getElementById('calGrid');grid.innerHTML='';
+  for(let i=0;i<off;i++){const e=document.createElement('div');e.className='cd mt';grid.appendChild(e);}
+  for(let d=1;d<=dim;d++){
+    const cell=document.createElement('div');
+    const ds=`${String(d).padStart(2,'0')}/${String(mo+1).padStart(2,'0')}/${yr}`;
+    const isToday=d===now.getDate();
+    const att=attDays.includes(ds);
+    cell.className='cd'+(isToday?' tod':att?' att':'');
+    cell.textContent=d;grid.appendChild(cell);
+  }
+}
+
+/* APPLY STATUS */
+function applyStatus(sc){
+  const strip=document.getElementById('sStrip');
+  const glow=document.getElementById('sGlow');
+  strip.className='status-strip '+sc;
+  glow.style.background=sc==='active'?'var(--accent)':sc==='warning'?'var(--yellow)':'var(--red)';
+  const ring=document.getElementById('timerRing');
+  ring.style.stroke=sc==='active'?'var(--accent)':sc==='warning'?'var(--yellow)':'var(--red)';
+  const statusEl=document.getElementById('dStatus');
+  if(sc==='active')statusEl.innerHTML='<span style="color:var(--accent)">🟢 Active</span>';
+  else if(sc==='warning')statusEl.innerHTML='<span style="color:var(--yellow)">🟡 Expiring</span>';
+  else statusEl.innerHTML='<span style="color:var(--red)">🔴 Expired</span>';
+}
+
+/* LOAD MEMBER */
+function loadMember(){
+  if(!SHEET_ID){showDemo();return;}
+  const cb='akMem_'+Date.now();
+  window[cb]=function(data){
+    try{
+      const rows=data.table.rows||[];
+      const mem=rows.find(r=>String(r.c[6]?.v||r.c[6]?.f||'').trim()===String(memberId).trim());
+      if(!mem){toast('❌ Member not found','error');setTimeout(()=>location.href='numpad.html?mode='+mode,2000);return;}
+      const name=mem.c[0]?.v||'—';
+      const contact=mem.c[1]?.v||'—';
+      const pkg=mem.c[2]?.v||'—';
+      const expiry=mem.c[3]?.f||String(mem.c[3]?.v||'—');
+      const parts=expiry.split('/');
+      let daysLeft='—';let sc='active';
+      if(parts.length===3){
+        const ed=new Date(parts[2],parts[1]-1,parts[0]);
+        const diff=Math.ceil((ed-new Date())/(864e5));
+        daysLeft=diff>0?diff:0;
+        if(diff<=0)sc='expired';else if(diff<=7)sc='warning';
+      }
+      document.getElementById('mName').textContent=name.split(' ')[0];
+      document.getElementById('mSub').textContent=mode==='entry'?"Let's crush it today! 💪":"Great session! 🐺";
+      document.getElementById('dId').textContent='#'+memberId;
+      document.getElementById('dPkg').textContent=pkg;
+      document.getElementById('dExp').textContent=expiry;
+      document.getElementById('dDays').textContent=daysLeft+' days';
+      document.getElementById('dContact').textContent=contact;
+      applyStatus(sc);
+      loadAttendance(memberId,name,sc);
+      logAttendance(memberId,name);
+    }catch(e){console.error(e);showDemo();}
+    delete window[cb];
+  };
+  const s=document.createElement('script');
+  s.src=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=Members&tq=select%20*&tqx=responseHandler:${cb}`;
+  document.head.appendChild(s);
+}
+
+function loadAttendance(id,name,sc){
+  const cb='akAtt_'+Date.now();
+  window[cb]=function(data){
+    try{
+      const rows=data.table.rows||[];
+      const myRows=rows.filter(r=>String(r.c[2]?.v||'').trim()===String(id).trim());
+      const attDays=[...new Set(myRows.filter(r=>r.c[4]?.v==='Entry').map(r=>r.c[0]?.f||String(r.c[0]?.v||'')))];
+      const now=new Date();
+      const mo=now.getMonth();
+      const monthV=attDays.filter(d=>{const p=d.split('/');return p.length===3&&parseInt(p[1])-1===mo;}).length;
+      let streak=0;
+      for(let i=0;i<60;i++){
+        const d=new Date(now);d.setDate(d.getDate()-i);
+        const ds=`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+        if(attDays.includes(ds))streak++;
+        else if(i>0)break;
+      }
+      document.getElementById('sStreak').textContent=streak;
+      document.getElementById('sMonth').textContent=monthV;
+      document.getElementById('sTotal').textContent=attDays.length;
+      renderCal(attDays);
+    }catch(e){renderCal([]);}
+    delete window[cb];
+  };
+  const s=document.createElement('script');
+  s.src=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=Attendance&tq=select%20*&tqx=responseHandler:${cb}`;
+  document.head.appendChild(s);
+}
+
+function logAttendance(id,name){
+  if(!SCRIPT_URL)return;
+  const now=new Date();
+  const date=now.toLocaleDateString('en-GB');
+  const time=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+
+  let payload;
+  if(mode==='entry'){
+    // New row: Date | Membership ID | Client name | Check In Time | Check Out Time | Status
+    payload={
+      sheet:'Attendance',
+      action:'Entry',
+      date:date,
+      membershipId:id,
+      clientName:name,
+      checkInTime:time
+    };
+  } else {
+    // Find existing row and update Check Out Time
+    payload={
+      sheet:'Attendance',
+      action:'Exit',
+      date:date,
+      membershipId:id,
+      clientName:name,
+      checkOutTime:time
+    };
+  }
+
+  const cb='akW_'+Date.now();
+  window[cb]=function(r){console.log('[AK Write]',r);delete window[cb];};
+  const s=document.createElement('script');
+  s.src=`${SCRIPT_URL}?data=${encodeURIComponent(JSON.stringify(payload))}&callback=${cb}`;
+  document.head.appendChild(s);
+}
+
+function showDemo(){
+  document.getElementById('mName').textContent='John';
+  document.getElementById('mSub').textContent=mode==='entry'?"Let's crush it today! 💪":"Great session! 🐺";
+  document.getElementById('dId').textContent='#42';
+  document.getElementById('dPkg').textContent='Monthly';
+  document.getElementById('dExp').textContent='31/03/2026';
+  document.getElementById('dDays').textContent='20 days';
+  document.getElementById('dContact').textContent='+971 50 123 4567';
+  applyStatus('active');
+  renderCal(['01/03/2026','03/03/2026','05/03/2026','07/03/2026','08/03/2026','10/03/2026','11/03/2026','12/03/2026']);
+  document.getElementById('sStreak').textContent='5';
+  document.getElementById('sMonth').textContent='8';
+  document.getElementById('sTotal').textContent='142';
+  document.getElementById('sAvg').textContent='52';
+}
+
+function toast(msg,type='success'){const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;document.getElementById('tc').appendChild(t);setTimeout(()=>t.remove(),3000);}
+
+loadMember();
+startTimer();
+</script>
+</body>
+</html>

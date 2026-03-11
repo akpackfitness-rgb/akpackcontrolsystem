@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>AK Pack Fitness — Check In</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+
+    /* ══════════════════════════════════
+       MEMBER RESULT POPUP MODAL
+    ══════════════════════════════════ */
+    .result-overlay {
+      position: fixed; inset: 0; z-index: 600;
+      background: rgba(6, 8, 18, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+      animation: overlayIn 0.25s ease forwards;
+    }
+    @keyframes overlayIn { from{opacity:0} to{opacity:1} }
+
+    .result-modal {
+      background: linear-gradient(160deg, #151B2E, #1A2040);
+      border: 1.5px solid rgba(255,255,255,0.10);
+      border-radius: 22px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.05),
+                  0 24px 80px rgba(0,0,0,0.6),
+                  0 8px 32px rgba(0,0,0,0.4);
+      width: 100%; max-width: 480px;
+      overflow: hidden;
+      animation: modalIn 0.38s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+      position: relative;
+    }
+    @keyframes modalIn {
+      from { opacity:0; transform: scale(0.82) translateY(30px); }
+      to   { opacity:1; transform: scale(1)    translateY(0px);  }
+    }
+
+    /* Colour bar top */
+    .result-modal-bar {
+      height: 4px; width: 100%;
+    }
+    .result-modal-bar.active  { background: linear-gradient(90deg,#22C55E,#4ADE80,#22C55E); }
+    .result-modal-bar.warning { background: linear-gradient(90deg,#F59E0B,#FCD34D,#F59E0B); }
+    .result-modal-bar.expired { background: linear-gradient(90deg,#E03030,#FF4040,#E03030); }
+    .result-modal-bar.exit    { background: linear-gradient(90deg,#3B82F6,#60A5FA,#3B82F6); }
+
+    .result-modal-inner { padding: 24px 24px 20px; }
+
+    /* Header row */
+    .result-modal-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; gap:12px; }
+    .result-modal-name { font-family: var(--font-display); font-size: clamp(1.8rem, 6vw, 2.8rem); letter-spacing: 3px; color: #fff; line-height: 1; }
+    .result-modal-id   { font-family: 'Courier New', monospace; font-size: 0.82rem; color: var(--rose-bright); letter-spacing: 2px; margin-top: 4px; }
+    .result-modal-close {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text-2); font-size: 1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all 0.2s;
+    }
+    .result-modal-close:hover { background: var(--rose-pale); color: var(--rose-bright); transform: rotate(90deg) scale(1.1); }
+
+    /* Info grid */
+    .result-info-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-bottom: 16px;
+    }
+    .result-info-cell {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px; padding: 12px 14px;
+    }
+    .result-info-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-3); margin-bottom: 4px; }
+    .result-info-value { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .result-days { font-family: var(--font-display); font-size: 1.9rem; letter-spacing: 2px; line-height: 1; }
+    .result-days.green  { color: #22C55E; text-shadow: 0 0 16px rgba(34,197,94,0.5); }
+    .result-days.yellow { color: #F59E0B; text-shadow: 0 0 16px rgba(245,158,11,0.5); }
+    .result-days.red    { color: #EF4444; text-shadow: 0 0 16px rgba(239,68,68,0.5); }
+
+    /* Alert bar */
+    .result-alert {
+      border-radius: 10px; padding: 11px 14px; margin-bottom: 14px;
+      font-size: 0.84rem; font-weight: 500;
+      display: flex; align-items: flex-start; gap: 9px;
+    }
+    .result-alert.danger  { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.25);  color: #EF4444; }
+    .result-alert.warning { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25); color: #F59E0B; }
+
+    /* Welcome section */
+    .result-welcome {
+      text-align: center; padding: 16px;
+      border-radius: 14px; margin-bottom: 16px;
+    }
+    .result-welcome.checkin { background: rgba(34,197,94,0.10); border: 1.5px solid rgba(34,197,94,0.22); }
+    .result-welcome.exit    { background: rgba(59,130,246,0.10); border: 1.5px solid rgba(59,130,246,0.22); }
+    .result-welcome-wolf { font-size: 2.6rem; margin-bottom: 6px; animation: wolfBounce 0.6s cubic-bezier(0.34,1.7,0.64,1); }
+    @keyframes wolfBounce { from{transform:scale(0) rotate(-20deg)} to{transform:scale(1) rotate(0deg)} }
+    .result-welcome-title { font-family: var(--font-heading); font-size: clamp(1rem,3.5vw,1.4rem); font-weight: 800; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+    .result-welcome.checkin .result-welcome-title { color: #22C55E; }
+    .result-welcome.exit    .result-welcome-title { color: #60A5FA; }
+    .result-welcome-msg { font-size: clamp(0.82rem,2.5vw,0.94rem); line-height: 1.55; opacity: 0.85; }
+    .result-welcome.checkin .result-welcome-msg { color: #4ADE80; }
+    .result-welcome.exit    .result-welcome-msg { color: #93C5FD; }
+
+    /* Countdown bar at bottom of modal */
+    .result-countdown {
+      padding: 0 24px 18px;
+    }
+    .result-countdown-track { height: 3px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow:hidden; }
+    .result-countdown-fill  { height: 100%; border-radius: 99px; width: 100%; }
+    .result-countdown-fill.checkin { background: linear-gradient(90deg,#22C55E,#4ADE80); }
+    .result-countdown-fill.exit    { background: linear-gradient(90deg,#3B82F6,#60A5FA); }
+    .result-countdown-fill.expired { background: linear-gradient(90deg,#E03030,#FF4040); }
+    .result-countdown-label { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-3); text-align: center; margin-top: 6px; }
+
+    /* Error toast (small, non-blocking) */
+    .toast-error {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      z-index: 700; background: #1A0A0A; border: 1.5px solid rgba(239,68,68,0.4);
+      border-radius: 12px; padding: 12px 20px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.86rem; font-weight: 500; color: #EF4444;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      animation: toastIn 0.3s cubic-bezier(0.34,1.4,0.64,1);
+      white-space: nowrap; max-width: 90vw;
+    }
+    @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+    /* ══════════════════════════════════
+       NUMBER PAD
+    ══════════════════════════════════ */
+    .numpad-display {
+      background: var(--surface-3); border: 2px solid var(--border-md);
+      border-radius: var(--radius); padding: 18px 20px;
+      font-family: var(--font-display); font-size: 3rem; letter-spacing: 8px;
+      color: var(--text); text-align: center; min-height: 80px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px; transition: border-color 0.2s, box-shadow 0.2s;
+      word-break: break-all;
+    }
+    .numpad-display.active { border-color: var(--rose); box-shadow: 0 0 0 3px var(--rose-glow); }
+    .numpad-display-placeholder { color: var(--text-3); font-size: 1.1rem; letter-spacing: 3px; font-family: var(--font-body); font-weight: 400; }
+    .numpad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+    .numpad-key {
+      background: var(--surface-2); border: 1.5px solid var(--border-md);
+      border-radius: var(--radius); color: var(--text); font-family: var(--font-display);
+      font-size: 2rem; letter-spacing: 1px; padding: 20px 10px; cursor: pointer;
+      text-align: center; transition: all 0.15s cubic-bezier(0.34,1.4,0.64,1);
+      user-select: none; -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation; line-height: 1;
+    }
+    .numpad-key:hover  { background: var(--surface-3); border-color: var(--border-lg); transform: scale(1.04); }
+    .numpad-key:active { transform: scale(0.91); background: var(--glass-hover); }
+    .numpad-key.key-clear { background: var(--surface-3); color: var(--yellow); border-color: var(--yellow-border); font-size: 1.2rem; font-family: var(--font-heading); letter-spacing: 2px; }
+    .numpad-key.key-clear:hover { background: var(--yellow-bg); }
+    .numpad-key.key-enter { background: linear-gradient(135deg,var(--rose),var(--rose-bright)); color:#fff; border-color:transparent; box-shadow:0 4px 18px var(--rose-glow-md); font-size:1.5rem; }
+    .numpad-key.key-enter:hover { box-shadow:0 6px 28px var(--rose-glow-md); transform:scale(1.05); }
+    .numpad-key.key-exit  { background: linear-gradient(135deg,#3B0DAA,#6B3BF0); color:#fff; border-color:transparent; box-shadow:0 4px 18px rgba(107,59,240,0.35); font-size:1.5rem; }
+    .numpad-key.key-exit:hover { box-shadow:0 6px 28px rgba(107,59,240,0.5); transform:scale(1.05); }
+    .numpad-key.key-del { font-size: 1.5rem; color: var(--text-2); }
+
+    /* ══════════════════════════════════
+       LAYOUT
+    ══════════════════════════════════ */
+    .terminal-wrap { display:flex; flex-direction:column; align-items:center; padding:4px 0 32px; }
+    .input-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; width:100%; max-width:440px; box-shadow:var(--shadow-md); position:relative; overflow:hidden; }
+    .input-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--rose),var(--rose-bright),transparent); }
+    .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:100%; max-width:960px; margin-bottom:16px; }
+    .graph-section { width:100%; max-width:960px; }
+    .mode-label { font-size:0.65rem; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--text-3); margin-bottom:10px; text-align:center; }
+
+    /* Loading spinner inside modal */
+    .modal-loading {
+      position: fixed; inset:0; z-index:600;
+      background: rgba(6,8,18,0.75); backdrop-filter:blur(12px);
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+      animation: overlayIn 0.2s ease;
+    }
+    .modal-loading-text { font-family:var(--font-heading); font-size:1rem; font-weight:700; letter-spacing:4px; text-transform:uppercase; color:var(--text-2); }
+
+    /* ── LANDSCAPE TABLET (the gym tablet) ── */
+    @media (orientation: landscape) and (max-height: 700px) {
+      .result-overlay { align-items: center; padding: 10px; }
+      .result-modal { max-width: 780px; display: grid; grid-template-columns: 1fr; }
+      .result-modal-inner { padding: 14px 20px 10px; }
+      .result-modal-name { font-size: 1.8rem; }
+      .result-info-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+      .result-info-cell { padding: 8px 10px; }
+      .result-info-label { font-size: 0.55rem; }
+      .result-info-value { font-size: 0.8rem; }
+      .result-days { font-size: 1.3rem; }
+      .result-welcome { padding: 10px 14px; margin-bottom: 10px; }
+      .result-welcome-wolf { font-size: 1.6rem; margin-bottom: 2px; }
+      .result-welcome-title { font-size: 0.9rem; }
+      .result-welcome-msg { font-size: 0.78rem; }
+      .result-modal-header { margin-bottom: 10px; }
+      .result-alert { padding: 8px 12px; margin-bottom: 8px; font-size: 0.78rem; }
+      .result-countdown { padding: 0 20px 12px; }
+      .result-modal-bar { height: 3px; }
+    }
+
+    @media(max-width:600px){
+      .stats-row { grid-template-columns:1fr 1fr; }
+      .input-card { padding:14px; }
+      .numpad-key { padding:16px 8px; font-size:1.7rem; }
+      .numpad-key.key-clear,.numpad-key.key-del { font-size:1.1rem; }
+      .numpad-display { font-size:2.4rem; min-height:66px; padding:14px; }
+      .numpad-grid { gap:8px; }
+      .result-modal { border-radius: 20px 20px 0 0; }
+      .result-overlay { align-items: flex-end; padding:0; }
+      .result-info-grid { grid-template-columns: 1fr 1fr; }
+      .result-modal-inner { padding:18px 18px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo" id="logoTapArea">
+    <img src="logo.png" alt="AK Pack Fitness"/>
+    <div class="sidebar-logo-name"><span>AK</span> PACK FITNESS</div>
+    <div class="sidebar-logo-sub">ATTENDANCE SYSTEM</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Menu</div>
+    <ul class="sidebar-nav">
+      <li><a href="index.html" class="active"><span class="nav-icon">🏋️</span> Check In</a></li>
+      <li id="navAdmin"   class="hidden"><a href="admin.html"><span class="nav-icon">📊</span> Monitor</a></li>
+      <li id="navHistory" class="hidden"><a href="history.html"><span class="nav-icon">📋</span> History</a></li>
+      <li><a href="workout.html"><span class="nav-icon">💪</span> Training Plans</a></li>
+    </ul>
+  </div>
+  <div class="sidebar-footer">
+    <button class="sidebar-footer-btn" onclick="openAdminLogin()"><span>🔒</span> Admin Access</button>
+    <button class="sidebar-footer-btn" onclick="showConfigOverlay()"><span>⚙️</span> Settings</button>
+  </div>
+</aside>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="index.html" class="bottom-nav-item active"><span class="bnav-icon">🏋️</span><span>Check In</span></a>
+    <a href="workout.html" class="bottom-nav-item"><span class="bnav-icon">💪</span><span>Training</span></a>
+    <a href="#" class="bottom-nav-item" onclick="openAdminLogin();return false;"><span class="bnav-icon">📊</span><span>Admin</span></a>
+    <a href="#" class="bottom-nav-item" onclick="showConfigOverlay();return false;"><span class="bnav-icon">⚙️</span><span>Settings</span></a>
+  </div>
+</nav>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLoginOverlay" class="config-overlay hidden">
+  <div class="config-box" style="max-width:360px">
+    <div class="config-title">🔒 Admin Access</div>
+    <p class="config-note">Enter the admin password to access monitor and history.</p>
+    <input class="config-input" id="adminPasswordInput" type="password" placeholder="Enter password..."
+      onkeydown="if(event.key==='Enter')checkAdminPassword()"/>
+    <div id="adminLoginError" class="alert alert-danger hidden" style="margin-top:8px"><span class="alert-icon">✖</span> Incorrect password.</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-primary" style="flex:1" onclick="checkAdminPassword()">Enter</button>
+      <button class="btn btn-secondary" onclick="closeAdminLogin()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-wrapper">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">🐺 Check In Terminal</div>
+    <div class="topbar-right">
+      <span class="live-dot">LIVE</span>
+      <span id="clockDisplay" style="font-size:0.75rem;color:var(--text-3)"></span>
+    </div>
+  </div>
+
+  <main class="page-content">
+    <div class="terminal-wrap">
+
+      <!-- CUBES -->
+      <div class="cube-row" style="width:100%;max-width:680px">
+        <div class="cube-btn active-checkin" id="cubeCheckin" onclick="setMode('checkin')">
+          <span class="cube-btn-icon">🏋️</span>
+          <div class="cube-btn-label">Check In</div>
+          <div class="cube-btn-sub">Record entry</div>
+        </div>
+        <div class="cube-live">
+          <div class="cube-live-number" id="liveCount">—</div>
+          <div class="cube-live-label">Pack Inside</div>
+          <div class="cube-live-sub">Today</div>
+        </div>
+        <div class="cube-btn" id="cubeExit" onclick="setMode('exit')">
+          <span class="cube-btn-icon">🚪</span>
+          <div class="cube-btn-label">Exit</div>
+          <div class="cube-btn-sub">Record exit</div>
+        </div>
+      </div>
+
+      <!-- NUMBER PAD -->
+      <div class="input-card mt-16">
+        <div class="mode-label" id="modeLabel">ENTER MEMBER ID — CHECK IN</div>
+        <div class="numpad-display" id="numpadDisplay">
+          <span class="numpad-display-placeholder" id="numpadPlaceholder">TAP NUMBERS BELOW</span>
+          <span id="numpadValue" style="display:none"></span>
+        </div>
+        <input type="hidden" id="memberIdInput"/>
+        <div class="numpad-grid">
+          <button class="numpad-key" onclick="numpadPress('1')">1</button>
+          <button class="numpad-key" onclick="numpadPress('2')">2</button>
+          <button class="numpad-key" onclick="numpadPress('3')">3</button>
+          <button class="numpad-key" onclick="numpadPress('4')">4</button>
+          <button class="numpad-key" onclick="numpadPress('5')">5</button>
+          <button class="numpad-key" onclick="numpadPress('6')">6</button>
+          <button class="numpad-key" onclick="numpadPress('7')">7</button>
+          <button class="numpad-key" onclick="numpadPress('8')">8</button>
+          <button class="numpad-key" onclick="numpadPress('9')">9</button>
+          <button class="numpad-key key-clear" onclick="numpadClear()">CLEAR</button>
+          <button class="numpad-key" onclick="numpadPress('0')">0</button>
+          <button class="numpad-key key-del" onclick="numpadDelete()">⌫</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button class="numpad-key key-enter" onclick="numpadSubmit()">✓ CHECK IN</button>
+          <button class="numpad-key key-exit"  onclick="numpadSubmitExit()">🚪 EXIT</button>
+        </div>
+      </div>
+
+      <!-- DIVIDER -->
+      <div style="width:100%;max-width:960px;border-top:1px solid var(--border);margin:28px 0 18px"></div>
+
+      <!-- STATS -->
+      <div class="stats-row">
+        <div class="stat-counter">
+          <div class="stat-counter-label">Check Ins</div>
+          <div class="stat-counter-number" id="statCheckIns">—</div>
+          <div class="stat-counter-sub">Today</div>
+        </div>
+        <div class="stat-counter">
+          <div class="stat-counter-label">Exits</div>
+          <div class="stat-counter-number" id="statExits" style="color:var(--blue);text-shadow:0 0 20px rgba(59,130,246,0.3)">—</div>
+          <div class="stat-counter-sub">Today</div>
+        </div>
+        <div class="stat-counter">
+          <div class="stat-counter-label">Peak Hour</div>
+          <div class="stat-counter-number" id="statPeakHour" style="font-size:1.6rem;color:var(--yellow);text-shadow:0 0 20px rgba(245,158,11,0.3)">—</div>
+          <div class="stat-counter-sub">Busiest time</div>
+        </div>
+        <div class="stat-counter">
+          <div class="stat-counter-label">Inside Now</div>
+          <div class="stat-counter-number" id="statInside" style="color:var(--green);text-shadow:0 0 20px rgba(34,197,94,0.3)">—</div>
+          <div class="stat-counter-sub">Estimated</div>
+        </div>
+      </div>
+
+      <!-- GRAPH -->
+      <div class="graph-section">
+        <div class="chart-container">
+          <div class="chart-header">
+            <div>
+              <div class="section-title">⏱ Peak Time Analysis</div>
+              <div class="section-divider"></div>
+            </div>
+            <div class="day-selector" id="daySelector"></div>
+          </div>
+          <div style="font-size:0.68rem;color:var(--text-3);margin-bottom:12px">Members per hour · <span style="color:var(--yellow)">🌟 Gold = peak</span></div>
+          <div class="chart-scroll">
+            <div class="chart-bars" id="chartBars">
+              <div style="text-align:center;width:100%;padding:20px;color:var(--text-3);font-size:0.8rem">Loading data...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>AK PACK FITNESS © <span id="fyear"></span> — <span>CHECK IN TERMINAL</span></p>
+  </footer>
+</div>
+
+<script src="script.js"></script>
+<script>
+document.getElementById('fyear').textContent = new Date().getFullYear();
+function updateClock(){ document.getElementById('clockDisplay').textContent = nowTime(); }
+setInterval(updateClock,1000); updateClock();
+
+// ── NUMBER PAD ────────────────────────────────────────────────
+let numpadCurrent = '';
+const MAX_DIGITS  = 6;
+
+function numpadPress(d){ if(numpadCurrent.length>=MAX_DIGITS)return; numpadCurrent+=d; updateNumpadDisplay(); }
+function numpadDelete(){ numpadCurrent=numpadCurrent.slice(0,-1); updateNumpadDisplay(); }
+function numpadClear() { numpadCurrent=''; updateNumpadDisplay(); }
+function updateNumpadDisplay(){
+  const disp=document.getElementById('numpadDisplay');
+  const ph  =document.getElementById('numpadPlaceholder');
+  const val =document.getElementById('numpadValue');
+  document.getElementById('memberIdInput').value=numpadCurrent;
+  if(numpadCurrent){ ph.style.display='none'; val.style.display='block'; val.textContent=numpadCurrent; disp.classList.add('active'); }
+  else             { ph.style.display='block'; val.style.display='none'; disp.classList.remove('active'); }
+}
+function numpadSubmit(){
+  if(!requireConfig())return;
+  if(!numpadCurrent){showToastError('Please enter your Member ID.');return;}
+  handleCheckIn(numpadCurrent);
+}
+function numpadSubmitExit(){
+  if(!requireConfig())return;
+  if(!numpadCurrent){showToastError('Please enter your Member ID.');return;}
+  handleExitMember(numpadCurrent);
+}
+
+// Physical keyboard support
+document.addEventListener('keydown',(e)=>{
+  if(e.target.tagName==='INPUT'&&e.target.type!=='hidden') return;
+  if(document.querySelector('.result-overlay')||document.querySelector('.modal-loading')) return;
+  if(e.key>='0'&&e.key<='9') numpadPress(e.key);
+  else if(e.key==='Backspace') numpadDelete();
+  else if(e.key==='Enter') numpadSubmit();
+  else if(e.key==='Escape'||e.key==='Delete') numpadClear();
+});
+
+// ── MODE ──────────────────────────────────────────────────────
+let currentMode='checkin';
+function setMode(mode){
+  currentMode=mode;
+  const ci=document.getElementById('cubeCheckin');
+  const ex=document.getElementById('cubeExit');
+  const ml=document.getElementById('modeLabel');
+  if(mode==='checkin'){
+    ci.className='cube-btn active-checkin'; ex.className='cube-btn dimmed';
+    ml.textContent='ENTER MEMBER ID — CHECK IN';
+    document.getElementById('topbarTitle').textContent='🐺 Check In Terminal';
+  } else {
+    ex.className='cube-btn active-exit'; ci.className='cube-btn dimmed';
+    ml.textContent='ENTER MEMBER ID — EXIT';
+    document.getElementById('topbarTitle').textContent='🚪 Exit Terminal';
+  }
+}
+
+// ── TOAST ERROR (small non-blocking) ─────────────────────────
+let toastTimer=null;
+function showToastError(msg){
+  document.querySelector('.toast-error')?.remove();
+  clearTimeout(toastTimer);
+  const t=document.createElement('div');
+  t.className='toast-error';
+  t.innerHTML=`<span>🚫</span><span>${msg}</span>`;
+  document.body.appendChild(t);
+  toastTimer=setTimeout(()=>t.remove(),3500);
+}
+
+// ── LOADING OVERLAY ───────────────────────────────────────────
+function showLoadingOverlay(show){
+  document.querySelector('.modal-loading')?.remove();
+  if(!show) return;
+  const el=document.createElement('div');
+  el.className='modal-loading';
+  el.innerHTML=`<div class="spinner" style="width:40px;height:40px;border-width:4px"></div><div class="modal-loading-text">Searching...</div>`;
+  document.body.appendChild(el);
+}
+
+// ── RESULT MODAL ──────────────────────────────────────────────
+let autoResetTimer=null, cdInterval=null;
+
+function showResultModal(html, type='checkin'){
+  closeResultModal();
+  const overlay=document.createElement('div');
+  overlay.className='result-overlay';
+  overlay.id='resultOverlay';
+  overlay.innerHTML=html;
+  document.body.appendChild(overlay);
+  // Close on backdrop click
+  overlay.addEventListener('click',(e)=>{ if(e.target===overlay) closeResultModal(); });
+  // Start auto countdown
+  startAutoReset(type);
+}
+
+function closeResultModal(){
+  stopAutoReset();
+  const ov=document.getElementById('resultOverlay');
+  if(ov){
+    ov.style.transition='opacity 0.25s ease';
+    ov.style.opacity='0';
+    setTimeout(()=>ov.remove(),250);
+  }
+  numpadClear();
+  setMode('checkin');
+  loadStats();
+}
+
+function startAutoReset(type='checkin'){
+  stopAutoReset();
+  let secs=6;
+  const bar=document.getElementById('resultCountdownFill');
+  const label=document.getElementById('resultCountdownLabel');
+  if(bar){ bar.style.transition='none'; bar.style.width='100%'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ bar.style.transition=`width ${secs}s linear`; bar.style.width='0%'; })); }
+  if(label) label.textContent=`Closing in ${secs}s · tap anywhere to close`;
+  cdInterval=setInterval(()=>{
+    secs--;
+    if(label) label.textContent=`Closing in ${secs}s · tap anywhere to close`;
+  },1000);
+  autoResetTimer=setTimeout(()=>closeResultModal(),secs*1000);
+}
+function stopAutoReset(){
+  clearTimeout(autoResetTimer); clearInterval(cdInterval);
+  autoResetTimer=cdInterval=null;
+}
+
+// ── CHECK IN HANDLER ──────────────────────────────────────────
+async function handleCheckIn(memberId){
+  showLoadingOverlay(true);
+  try{
+    const row=await lookupMember(memberId);
+    showLoadingOverlay(false);
+    if(!row){ showToastError(`Member ID "${memberId}" not found. Please contact reception.`); return; }
+
+    const member = extractMember(row, memberId);
+    const days       = daysRemaining(member.expiryDate);
+    const statusType = getMembershipStatus(days);
+    const statusLabel= statusType==='Warning'?'Active':statusType;
+
+    try{ await recordAttendance(member,statusLabel); }catch(e){ console.warn('Write failed:',e); }
+
+    const daysClass  = days>3?'green':days>=0?'yellow':'red';
+    const daysDisplay= days<0?`${Math.abs(days)} DAYS OVERDUE`:days===0?'EXPIRES TODAY':`${days} DAYS LEFT`;
+    const barClass   = statusType==='Active'?'active':statusType==='Warning'?'warning':'expired';
+
+    let alertHtml='';
+    if(statusType==='Expired') alertHtml=`<div class="result-alert danger"><span>🚫</span><span>MEMBERSHIP EXPIRED — Please renew at reception.</span></div>`;
+    else if(days<=3){ const m=days===0?'expires TODAY':days===1?'expires TOMORROW':`expires in ${days} days`; alertHtml=`<div class="result-alert warning"><span>⚠️</span><span>Membership ${m}. Please renew soon.</span></div>`; }
+
+    const firstName = getFirstName(member.name);
+    const packMsg   = statusType!=='Expired'?getPackMessage(firstName,'checkin'):'';
+    const welcomeHtml = statusType!=='Expired'
+      ? `<div class="result-welcome checkin">
+          <div class="result-welcome-wolf">🐺</div>
+          <div class="result-welcome-title">Welcome to the Pack!</div>
+          <div class="result-welcome-msg">${packMsg}</div>
+        </div>`
+      : `<div class="result-welcome" style="background:rgba(239,68,68,0.08);border:1.5px solid rgba(239,68,68,0.2)">
+          <div class="result-welcome-wolf">🚫</div>
+          <div class="result-welcome-title" style="color:#EF4444">Membership Expired</div>
+          <div class="result-welcome-msg" style="color:#FCA5A5">Please renew your membership at reception to continue.</div>
+        </div>`;
+
+    showResultModal(`
+      <div class="result-modal">
+        <div class="result-modal-bar ${barClass}"></div>
+        <div class="result-modal-inner">
+          <div class="result-modal-header">
+            <div>
+              <div class="result-modal-name">${member.name.toUpperCase()}</div>
+              <div class="result-modal-id">ID: ${member.memberID}</div>
+            </div>
+            <button class="result-modal-close" onclick="closeResultModal()">✕</button>
+          </div>
+          <div class="result-info-grid">
+            <div class="result-info-cell">
+              <div class="result-info-label">Start Date</div>
+              <div class="result-info-value">${formatDate(member.startDate)}</div>
+            </div>
+            <div class="result-info-cell">
+              <div class="result-info-label">Expiry Date</div>
+              <div class="result-info-value">${formatDate(member.expiryDate)}</div>
+            </div>
+            <div class="result-info-cell">
+              <div class="result-info-label">Days Remaining</div>
+              <div class="result-days ${daysClass}">${daysDisplay}</div>
+            </div>
+            <div class="result-info-cell">
+              <div class="result-info-label">Contact</div>
+              <div class="result-info-value">${member.phone||'—'}</div>
+            </div>
+          </div>
+          <div class="result-info-grid" style="grid-template-columns:1fr;margin-top:-6px">
+            <div class="result-info-cell">
+              <div class="result-info-label">Package</div>
+              <div class="result-info-value">${member.package||'—'}</div>
+            </div>
+          </div>
+          ${alertHtml}
+          ${welcomeHtml}
+        </div>
+        <div class="result-countdown">
+          <div class="result-countdown-track">
+            <div class="result-countdown-fill ${barClass}" id="resultCountdownFill"></div>
+          </div>
+          <div class="result-countdown-label" id="resultCountdownLabel">Closing in 6s · tap anywhere to close</div>
+        </div>
+      </div>`, barClass);
+
+  }catch(err){
+    showLoadingOverlay(false);
+    showToastError(`Error: ${err.message}`);
+    console.error(err);
+  }
+}
+
+// ── EXIT HANDLER ──────────────────────────────────────────────
+async function handleExitMember(memberId){
+  showLoadingOverlay(true);
+  try{
+    const row=await lookupMember(memberId);
+    showLoadingOverlay(false);
+    if(!row){ showToastError(`Member ID "${memberId}" not found.`); return; }
+
+    const member = extractMember(row, memberId);
+    const exitTime=nowTime();
+    try{ await writeRow('Attendance',[today(),exitTime,member.memberID,member.name,'EXIT']); }catch(e){}
+
+    const firstName=getFirstName(member.name);
+    const packMsg  =getPackMessage(firstName,'exit');
+
+    showResultModal(`
+      <div class="result-modal">
+        <div class="result-modal-bar exit"></div>
+        <div class="result-modal-inner">
+          <div class="result-modal-header">
+            <div>
+              <div class="result-modal-name">${member.name.toUpperCase()}</div>
+              <div class="result-modal-id">ID: ${member.memberID}</div>
+            </div>
+            <button class="result-modal-close" onclick="closeResultModal()">✕</button>
+          </div>
+          <div class="result-info-grid">
+            <div class="result-info-cell" style="grid-column:1/-1;text-align:center">
+              <div class="result-info-label">Exit Time Recorded</div>
+              <div style="font-family:var(--font-display);font-size:2.2rem;letter-spacing:4px;color:#60A5FA;text-shadow:0 0 20px rgba(96,165,250,0.4)">${exitTime}</div>
+            </div>
+          </div>
+          <div class="result-welcome exit">
+            <div class="result-welcome-wolf">🐺</div>
+            <div class="result-welcome-title">See you soon, ${firstName}!</div>
+            <div class="result-welcome-msg">${packMsg}</div>
+          </div>
+        </div>
+        <div class="result-countdown">
+          <div class="result-countdown-track">
+            <div class="result-countdown-fill exit" id="resultCountdownFill"></div>
+          </div>
+          <div class="result-countdown-label" id="resultCountdownLabel">Closing in 6s · tap anywhere to close</div>
+        </div>
+      </div>`, 'exit');
+
+  }catch(err){
+    showLoadingOverlay(false);
+    showToastError(`Error: ${err.message}`);
+  }
+}
+
+// ── STATS & GRAPH ─────────────────────────────────────────────
+let graphData={}, selectedDay=today();
+async function loadStats(){
+  try{
+    const rows=await readSheet('Attendance');
+    console.log('[AK Stats] Attendance rows:', rows.length);
+    if(rows.length>0) console.log('[AK Stats] First row keys:', Object.keys(rows[0]));
+    const todayStr=today();
+    console.log('[AK Stats] Today:', todayStr);
+
+    // Match date flexibly — handles DD/MM/YYYY format
+    const todayRows=rows.filter(r=>{
+      const d=(r['Date']||r['date']||'').trim();
+      return d===todayStr;
+    });
+    console.log('[AK Stats] Today rows:', todayRows.length);
+
+    const checkIns=todayRows.filter(r=>(r['Status']||r['status']||'').trim()!=='EXIT');
+    const exits   =todayRows.filter(r=>(r['Status']||r['status']||'').trim()==='EXIT');
+    document.getElementById('liveCount').textContent    =checkIns.length;
+    document.getElementById('statCheckIns').textContent =checkIns.length;
+    document.getElementById('statExits').textContent    =exits.length;
+    document.getElementById('statInside').textContent   =Math.max(0,checkIns.length-exits.length);
+
+    graphData={};
+    rows.forEach(r=>{
+      const date=(r['Date']||r['date']||'').trim();
+      const timeStr=(r['Time']||r['time']||'').trim();
+      const status=(r['Status']||r['status']||'').trim();
+      if(!date||!timeStr||status==='EXIT') return;
+      if(!graphData[date])graphData[date]={};
+      // Handle both 12hr (02:30 PM) and 24hr (14:30) time
+      let hour;
+      if(timeStr.includes('PM')||timeStr.includes('AM')){
+        const parts=timeStr.replace(/\s?(AM|PM)/i,'').split(':');
+        hour=parseInt(parts[0]);
+        if(timeStr.includes('PM')&&hour!==12) hour+=12;
+        if(timeStr.includes('AM')&&hour===12) hour=0;
+      } else {
+        hour=parseInt(timeStr.split(':')[0]);
+      }
+      if(!isNaN(hour)){ if(!graphData[date][hour])graphData[date][hour]=0; graphData[date][hour]++; }
+    });
+
+    const todayHours=graphData[todayStr]||{};
+    const maxCount=Math.max(...Object.values(todayHours),0);
+    const peakHour=Object.keys(todayHours).find(h=>todayHours[h]===maxCount);
+    document.getElementById('statPeakHour').textContent=peakHour!=null?`${peakHour}:00`:'—';
+    buildDaySelector(); renderGraph(selectedDay);
+  }catch(e){console.warn('Stats error:',e);}
+}
+function buildDaySelector(){
+  const dates=[...new Set([today(),...Object.keys(graphData).sort().reverse()])].slice(0,7);
+  document.getElementById('daySelector').innerHTML=dates.map(d=>{
+    const p=d.split('/'); const label=p.length===3?`${p[0]}/${p[1]}`:d;
+    return `<button class="day-pill ${d===selectedDay?'active':''}" onclick="selectDay('${d}')">${label}</button>`;
+  }).join('');
+}
+function selectDay(d){selectedDay=d;buildDaySelector();renderGraph(d);}
+function renderGraph(date){
+  const barsEl=document.getElementById('chartBars');
+  const hours=graphData[date]||{};
+  const allHours=Array.from({length:14},(_,i)=>i+6);
+  const maxVal=Math.max(...allHours.map(h=>hours[h]||0),1);
+  const peakVal=Math.max(...Object.values(hours),0);
+  barsEl.innerHTML=allHours.map(h=>{
+    const val=hours[h]||0; const pct=Math.round((val/maxVal)*100);
+    const isPeak=val===peakVal&&val>0;
+    const label=h<12?`${h}am`:h===12?'12pm':`${h-12}pm`;
+    return `<div class="chart-bar-wrap">
+      <div class="chart-bar-val">${val||''}</div>
+      <div class="chart-bar ${isPeak?'peak':''}" style="height:${pct}%">
+        <div class="chart-tooltip">${label}: ${val} member${val!==1?'s':''}</div>
+        <div class="chart-bar-label">${label}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MIDNIGHT RESET ────────────────────────────────────────────
+let lastKnownDate=today();
+function checkMidnightReset(){
+  const now=today();
+  if(now!==lastKnownDate){
+    lastKnownDate=now; selectedDay=now; graphData={};
+    ['liveCount','statCheckIns','statExits','statInside'].forEach(id=>document.getElementById(id).textContent='0');
+    document.getElementById('statPeakHour').textContent='—';
+    loadStats();
+  }
+}
+
+// ── ADMIN LOGIN ───────────────────────────────────────────────
+const ADMIN_PASSWORD='akpack2025';
+let logoTaps=0,logoTimer;
+document.getElementById('logoTapArea')?.addEventListener('click',()=>{
+  logoTaps++;clearTimeout(logoTimer);logoTimer=setTimeout(()=>logoTaps=0,3000);
+  if(logoTaps>=5){logoTaps=0;openAdminLogin();}
+});
+function openAdminLogin(){
+  document.getElementById('adminLoginOverlay').classList.remove('hidden');
+  document.getElementById('adminPasswordInput').value='';
+  document.getElementById('adminLoginError').classList.add('hidden');
+  setTimeout(()=>document.getElementById('adminPasswordInput').focus(),100);
+}
+function closeAdminLogin(){ document.getElementById('adminLoginOverlay').classList.add('hidden'); }
+function checkAdminPassword(){
+  if(document.getElementById('adminPasswordInput').value===ADMIN_PASSWORD){
+    closeAdminLogin();
+    document.getElementById('navAdmin')?.classList.remove('hidden');
+    document.getElementById('navHistory')?.classList.remove('hidden');
+    const ov=document.createElement('div');
+    ov.className='config-overlay';ov.id='adminMenuOv';
+    ov.innerHTML=`<div class="config-box" style="max-width:340px">
+      <div class="config-title" style="margin-bottom:16px">🐺 Admin Panel</div>
+      <a href="admin.html"   class="btn btn-primary  btn-block" style="display:flex;text-decoration:none;margin-bottom:8px;padding:12px">📊 Attendance Monitor</a>
+      <a href="history.html" class="btn btn-secondary btn-block" style="display:flex;text-decoration:none;margin-bottom:16px;padding:12px">📋 Attendance History</a>
+      <button class="btn btn-ghost btn-block" onclick="document.getElementById('adminMenuOv').remove()">Close</button>
+    </div>`;
+    document.body.appendChild(ov);
+  }else{
+    document.getElementById('adminLoginError').classList.remove('hidden');
+    document.getElementById('adminPasswordInput').value='';
+    document.getElementById('adminPasswordInput').focus();
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  if(!requireConfig())return;
+  loadStats();
+  setInterval(loadStats,30000);
+  setInterval(checkMidnightReset,60000);
+});
+</script>
+</body>
+</html>

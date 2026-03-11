@@ -20,10 +20,11 @@ async function readSheet(sheetName) {
   const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}')+1);
   const data = JSON.parse(jsonStr);
   if (!data.table||!data.table.rows) return [];
-  const cols = data.table.cols.map(c=>c.label||'');
+  // Trim column names to remove any trailing/leading spaces from sheet headers
+  const cols = data.table.cols.map(c=>(c.label||'').trim());
   const rows = data.table.rows.map(row=>{
     const obj={};
-    row.c.forEach((cell,i)=>{ obj[cols[i]]=cell?(cell.v!==null&&cell.v!==undefined?String(cell.v):''):''; });
+    row.c.forEach((cell,i)=>{ obj[cols[i]]=cell?(cell.v!==null&&cell.v!==undefined?String(cell.v).trim():''):''; });
     return obj;
   });
   return rows.filter(r=>Object.values(r).some(v=>v.trim()!==''));
@@ -94,21 +95,24 @@ async function lookupMember(memberId) {
   const rows=await readSheet(SHEETS.MEMBERS_SHEET);
   const id=memberId.trim();
   return rows.find(r=>{
-    // Supports both old and new column names
-    const rid=(r['Membership ID']||r['MemberID']||r['Member ID']||r['memberid']||'').trim();
-    return rid===id||rid.toUpperCase()===id.toUpperCase();
+    // Trim all keys to handle trailing spaces in sheet headers
+    const rid=(r['Membership ID']||r['Membership ID ']||r['MemberID']||r['Member ID']||'').trim();
+    return rid===id;
   })||null;
 }
-// Helper to extract member fields from any column name format
+// Helper to extract member fields — trims all keys to handle trailing spaces
 function extractMember(row, fallbackId) {
+  // Normalize row keys by trimming whitespace
+  const r = {};
+  Object.keys(row).forEach(k => { r[k.trim()] = (row[k]||'').trim(); });
   return {
-    memberID:   row['Membership ID']  ||row['MemberID']   ||row['Member ID']  ||fallbackId,
-    name:       row['Client name']    ||row['Name']        ||row['name']       ||'Unknown',
-    phone:      row['Contact no']     ||row['Phone']       ||row['phone']      ||'',
-    package:    row['Package Details']||row['Package']     ||'',
-    startDate:  parseDate(row['Created On']       ||row['StartDate']  ||row['Start Date'] ||''),
-    expiryDate: parseDate(row['Package Validity'] ||row['ExpiryDate'] ||row['Expiry Date']||''),
-    status:     row['Status']||''
+    memberID:   r['Membership ID']  ||fallbackId,
+    name:       r['Client name']    ||'Unknown',
+    phone:      r['Contact no']     ||'',
+    package:    r['Package Details']||'',
+    startDate:  parseDate(r['Created On']      ||''),
+    expiryDate: parseDate(r['Package Validity']||''),
+    status:     r['Status']         ||''
   };
 }
 async function recordAttendance(member,status){

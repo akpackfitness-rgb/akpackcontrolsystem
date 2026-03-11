@@ -94,9 +94,22 @@ async function lookupMember(memberId) {
   const rows=await readSheet(SHEETS.MEMBERS_SHEET);
   const id=memberId.trim();
   return rows.find(r=>{
-    const rid=(r['MemberID']||r['Member ID']||r['memberid']||'').trim();
+    // Supports both old and new column names
+    const rid=(r['Membership ID']||r['MemberID']||r['Member ID']||r['memberid']||'').trim();
     return rid===id||rid.toUpperCase()===id.toUpperCase();
   })||null;
+}
+// Helper to extract member fields from any column name format
+function extractMember(row, fallbackId) {
+  return {
+    memberID:   row['Membership ID']  ||row['MemberID']   ||row['Member ID']  ||fallbackId,
+    name:       row['Client name']    ||row['Name']        ||row['name']       ||'Unknown',
+    phone:      row['Contact no']     ||row['Phone']       ||row['phone']      ||'',
+    package:    row['Package Details']||row['Package']     ||'',
+    startDate:  parseDate(row['Created On']       ||row['StartDate']  ||row['Start Date'] ||''),
+    expiryDate: parseDate(row['Package Validity'] ||row['ExpiryDate'] ||row['Expiry Date']||''),
+    status:     row['Status']||''
+  };
 }
 async function recordAttendance(member,status){
   await writeRow(SHEETS.ATTENDANCE_SHEET,[today(),nowTime(),member.memberID,member.name,status]);

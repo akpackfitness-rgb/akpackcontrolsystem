@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AK Pack — Live Feed</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{overflow-y:auto;overflow-x:hidden}
+
+.topbar{position:sticky;top:0;background:rgba(10,22,40,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;z-index:100}
+.logo-wrap{display:flex;align-items:center;gap:9px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 12px var(--accent-glow)}
+.logo-text{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.08em}
+.live-badge{display:flex;align-items:center;gap:5px;background:rgba(0,200,150,.1);border:1px solid rgba(0,200,150,.25);padding:5px 10px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--accent)}
+
+.stats-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.ss-stat{text-align:center}
+.ss-val{font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1}
+.ss-label{font-size:8px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;margin-top:1px}
+.ss-stat:nth-child(1) .ss-val{color:var(--blue)}
+.ss-stat:nth-child(2) .ss-val{color:var(--accent)}
+.ss-stat:nth-child(3) .ss-val{color:var(--text2)}
+
+.feed{padding:12px 14px;display:flex;flex-direction:column;gap:8px;padding-bottom:72px}
+.feed-sec{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);padding:3px 0}
+
+/* CARD */
+.fc{border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:all .25s cubic-bezier(.34,1.56,.64,1);animation:cIn .35s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes cIn{from{opacity:0;transform:translateY(-12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.fc:active{transform:scale(.98)}
+.fc.green{background:rgba(0,200,150,.05);border-color:rgba(0,200,150,.2)}
+.fc.yellow{background:rgba(245,200,66,.05);border-color:rgba(245,200,66,.2)}
+.fc.red{background:rgba(224,85,85,.05);border-color:rgba(224,85,85,.18)}
+
+.fc-main{padding:11px 13px;display:flex;align-items:center;gap:10px}
+.fc-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.fc.green .fc-dot{background:var(--accent);box-shadow:0 0 7px rgba(0,200,150,.5)}
+.fc.yellow .fc-dot{background:var(--yellow);box-shadow:0 0 7px rgba(245,200,66,.5)}
+.fc.red .fc-dot{background:var(--red);box-shadow:0 0 7px rgba(224,85,85,.5)}
+.fc-info{flex:1;min-width:0}
+.fc-name{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-meta{font-size:11px;color:var(--text2);margin-top:1px}
+.fc-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0}
+.fc-action{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.08em}
+.fc.green .fc-action{color:var(--accent)}
+.fc.yellow .fc-action{color:var(--yellow)}
+.fc.red .fc-action{color:var(--red)}
+.fc-time{font-size:10px;color:var(--text3);font-family:'Barlow Condensed',sans-serif}
+
+.fc-details{max-height:0;overflow:hidden;transition:max-height .3s ease;border-top:0 solid var(--border)}
+.fc-details.open{max-height:160px;border-top-width:1px}
+.fc-details-inner{padding:11px 13px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dr{display:flex;flex-direction:column;gap:1px}
+.dr-l{font-size:8px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif}
+.dr-v{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;color:var(--text)}
+
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.empty-text{font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:.04em}
+
+.refresh-bar{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;justify-content:space-between}
+.rt{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:var(--text3);letter-spacing:.06em}
+.rp{height:2px;background:var(--border);border-radius:1px;overflow:hidden;width:56px}
+.rf{height:100%;background:var(--accent);border-radius:1px;animation:refill 8s linear infinite}
+@keyframes refill{from{width:100%}to{width:0%}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-wrap">
+    <div class="logo-icon">🐺</div>
+    <div class="logo-text">Live Feed</div>
+  </div>
+  <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+</div>
+
+<div class="stats-strip">
+  <div class="ss-stat"><div class="ss-val" id="inC">0</div><div class="ss-label">Inside</div></div>
+  <div class="ss-stat"><div class="ss-val" id="ciC">0</div><div class="ss-label">Check-ins</div></div>
+  <div class="ss-stat"><div class="ss-val" id="exC">0</div><div class="ss-label">Exits</div></div>
+</div>
+
+<div class="feed" id="feed">
+  <div class="feed-sec">Today's Activity</div>
+  <div class="empty" id="emptyState">
+    <div class="empty-icon">🐺</div>
+    <div class="empty-text">Waiting for members...</div>
+  </div>
+</div>
+
+<div class="refresh-bar">
+  <div class="rt">Refreshes every 8s</div>
+  <div class="rp"><div class="rf" id="rf"></div></div>
+</div>
+
+<script>
+const SHEET_ID=localStorage.getItem('ak_sheet_id')||'';
+const DEMO=[
+  {name:'John Mathew',id:'42',time:'06:01 PM',action:'Entry',sc:'active',pkg:'Monthly',expiry:'31/03/2026',dl:20,contact:'+971 50 123 4567'},
+  {name:'Sara Ahmed',id:'17',time:'05:58 PM',action:'Exit',sc:'warning',pkg:'Monthly',expiry:'15/03/2026',dl:4,contact:'+971 55 987 6543'},
+  {name:'Mike Johnson',id:'31',time:'05:45 PM',action:'Entry',sc:'active',pkg:'Quarterly',expiry:'30/06/2026',dl:111,contact:'+971 52 456 7890'},
+  {name:'Riya Patel',id:'8',time:'05:30 PM',action:'Entry',sc:'expired',pkg:'Monthly',expiry:'05/03/2026',dl:0,contact:'+971 56 321 0987'},
+  {name:'Omar Hassan',id:'55',time:'05:15 PM',action:'Exit',sc:'active',pkg:'Annual',expiry:'01/01/2027',dl:296,contact:'+971 50 111 2222'},
+];
+
+function color(sc){return sc==='expired'?'red':sc==='warning'?'yellow':'green';}
+
+function renderCards(records){
+  const feed=document.getElementById('feed');
+  feed.querySelectorAll('.fc').forEach(c=>c.remove());
+  const em=document.getElementById('emptyState');
+  if(!records.length){em.style.display='block';return;}
+  em.style.display='none';
+  let ci=0,ex=0;const ins=new Set();
+  records.forEach((r,i)=>{
+    if(r.action==='Entry'){ci++;ins.add(r.id);}
+    if(r.action==='Exit'){ex++;ins.delete(r.id);}
+    const cl=color(r.sc);
+    const card=document.createElement('div');
+    card.className=`fc ${cl}`;
+    card.style.animationDelay=`${i*.04}s`;
+    card.innerHTML=`
+      <div class="fc-main">
+        <div class="fc-dot"></div>
+        <div class="fc-info">
+          <div class="fc-name">${r.name}</div>
+          <div class="fc-meta">ID: ${r.id}</div>
+        </div>
+        <div class="fc-right">
+          <div class="fc-action">${r.action==='Entry'?'✅ ENTRY':'🚪 EXIT'}</div>
+          <div class="fc-time">${r.time}</div>
+        </div>
+      </div>
+      <div class="fc-details">
+        <div class="fc-details-inner">
+          <div class="dr"><div class="dr-l">Package</div><div class="dr-v">${r.pkg||'—'}</div></div>
+          <div class="dr"><div class="dr-l">Expiry</div><div class="dr-v">${r.expiry||'—'}</div></div>
+          <div class="dr"><div class="dr-l">Days Left</div><div class="dr-v" style="color:${cl==='red'?'var(--red)':cl==='yellow'?'var(--yellow)':'var(--accent)'}">${r.dl>0?r.dl+' days':'EXPIRED'}</div></div>
+          <div class="dr"><div class="dr-l">Contact</div><div class="dr-v">${r.contact||'—'}</div></div>
+        </div>
+      </div>`;
+    card.querySelector('.fc-main').addEventListener('click',()=>card.querySelector('.fc-details').classList.toggle('open'));
+    feed.appendChild(card);
+  });
+  document.getElementById('inC').textContent=ins.size;
+  document.getElementById('ciC').textContent=ci;
+  document.getElementById('exC').textContent=ex;
+}
+
+function loadFeed(){
+  if(!SHEET_ID){renderCards(DEMO);return;}
+  const today=new Date().toLocaleDateString('en-GB');
+  const cb='akLive_'+Date.now();
+  window[cb]=function(data){
+    try{
+      const rows=(data.table.rows||[]).slice().reverse().map(r=>({
+        name:r.c[3]?.v||'—',id:r.c[2]?.v||'—',
+        time:r.c[1]?.v||'—',action:r.c[4]?.v||'—',
+        sc:'active',pkg:'—',expiry:'—',dl:'—',contact:'—'
+      })).filter(r=>{return true;});
+      renderCards(rows.length?rows:DEMO);
+    }catch(e){renderCards(DEMO);}
+    delete window[cb];
+  };
+  const s=document.createElement('script');
+  s.src=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=Attendance&tq=select%20*&tqx=responseHandler:${cb}`;
+  document.head.appendChild(s);
+}
+
+loadFeed();
+setInterval(()=>{
+  loadFeed();
+  const rf=document.getElementById('rf');
+  rf.style.animation='none';rf.offsetHeight;rf.style.animation='refill 8s linear infinite';
+},8000);
+</script>
+</body>
+</html>

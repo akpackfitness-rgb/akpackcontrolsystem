@@ -1,5 +1,5 @@
 /* ============================================
-   AK PACK FITNESS — CORE SCRIPT v5.0
+   AK PACK FITNESS — CORE SCRIPT v5.1
    Google Sheets + Pack Messages + All Logic
    ============================================ */
 
@@ -9,7 +9,7 @@ function saveConfig(cfg) { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg))
 
 const SHEETS = { MEMBERS_SHEET:'Members', ATTENDANCE_SHEET:'Attendance' };
 
-// READ from Google Sheets
+// ─── READ ─────────────────────────────────────────────────────
 async function readSheet(sheetName) {
   const cfg = getConfig();
   if (!cfg.spreadsheetId) throw new Error('Spreadsheet ID not configured.');
@@ -20,64 +20,46 @@ async function readSheet(sheetName) {
   const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}')+1);
   const data = JSON.parse(jsonStr);
   if (!data.table||!data.table.rows) return [];
-  // Trim column names to remove any trailing/leading spaces from sheet headers
+  // Trim all column header names at source
   const cols = data.table.cols.map(c=>(c.label||'').trim());
   const rows = data.table.rows.map(row=>{
     const obj={};
-    row.c.forEach((cell,i)=>{ obj[cols[i]]=cell?(cell.v!==null&&cell.v!==undefined?String(cell.v).trim():''):''; });
+    row.c.forEach((cell,i)=>{
+      if (!cell || cell.v===null || cell.v===undefined) { obj[cols[i]]=''; return; }
+      // For date cells, Google Sheets gives formatted string in cell.f — use that if available
+      // cell.v for dates looks like "Date(2026,2,19)" — we keep it for parseDate
+      // cell.f is the human-readable formatted value e.g. "19/03/2026" or "19-03-2026"
+      const raw = cell.f ? String(cell.f).trim() : String(cell.v).trim();
+      obj[cols[i]] = raw;
+    });
     return obj;
   });
   return rows.filter(r=>Object.values(r).some(v=>v.trim()!==''));
 }
 
-// WRITE via JSONP — bypasses CORS completely, works from any browser/device
+// ─── WRITE via JSONP ──────────────────────────────────────────
 function writeRow(sheetName, rowData) {
   return new Promise((resolve, reject) => {
     const cfg = getConfig();
     if (!cfg.appsScriptUrl) { reject(new Error('Apps Script URL not configured.')); return; }
-
-    const payload      = { sheet: sheetName, row: rowData };
+    const payload      = { sheet:sheetName, row:rowData };
     const callbackName = 'akpack_cb_' + Date.now();
     const params       = encodeURIComponent(JSON.stringify(payload));
     const url          = `${cfg.appsScriptUrl}?data=${params}&callback=${callbackName}`;
-
-    // JSONP: inject a <script> tag — Apps Script wraps response in callback()
     const script = document.createElement('script');
-    const timer  = setTimeout(() => {
-      cleanup();
-      // Timeout is OK — the write likely still succeeded on the server
-      resolve(true);
-    }, 8000);
-
-    function cleanup() {
-      clearTimeout(timer);
-      delete window[callbackName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-    }
-
-    window[callbackName] = function(response) {
-      cleanup();
-      if (response && response.status === 'ok') {
-        resolve(true);
-      } else {
-        console.warn('Apps Script response:', response);
-        resolve(true); // resolve anyway — row may have been written
-      }
-    };
-
-    script.onerror = function() {
-      cleanup();
-      resolve(true); // resolve anyway — CORS error doesn't mean write failed
-    };
-
+    const timer  = setTimeout(()=>{ cleanup(); resolve(true); }, 8000);
+    function cleanup(){ clearTimeout(timer); delete window[callbackName]; if(script.parentNode)script.parentNode.removeChild(script); }
+    window[callbackName] = function(r){ cleanup(); resolve(true); };
+    script.onerror = function(){ cleanup(); resolve(true); };
     script.src = url;
     document.head.appendChild(script);
   });
 }
 
-// DATE HELPERS
+// ─── DATE HELPERS ─────────────────────────────────────────────
 function today() { return new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 function nowTime(){ return new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}); }
+
 function parseDate(s) {
   if (!s || String(s).trim()==='') return null;
   s = String(s).trim();
@@ -86,26 +68,18 @@ function parseDate(s) {
   const gm = s.match(/Date\((\d+),(\d+),(\d+)\)/);
   if (gm) return new Date(parseInt(gm[1]), parseInt(gm[2]), parseInt(gm[3]));
 
-  // DD/MM/YYYY or D/M/YYYY
-  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  // DD-MM-YYYY or DD/MM/YYYY or DD.MM.YYYY
+  const dmy = s.match(/^(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{4})$/);
   if (dmy) return new Date(parseInt(dmy[3]), parseInt(dmy[2])-1, parseInt(dmy[1]));
 
-  // YYYY/MM/DD or YYYY-MM-DD
-  const ymd = s.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+  // YYYY-MM-DD or YYYY/MM/DD
+  const ymd = s.match(/^(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})$/);
   if (ymd) return new Date(parseInt(ymd[1]), parseInt(ymd[2])-1, parseInt(ymd[3]));
 
-  // MM/DD/YYYY (US format)
-  const mdy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
-  if (mdy) {
-    // Ambiguous — if first number > 12 it must be day
-    if (parseInt(mdy[1]) > 12) return new Date(parseInt(mdy[3]), parseInt(mdy[2])-1, parseInt(mdy[1]));
-    return new Date(parseInt(mdy[3]), parseInt(mdy[1])-1, parseInt(mdy[2]));
-  }
-
-  // Plain number — Google Sheets serial date (days since Dec 30 1899)
+  // Google Sheets serial number (days since Dec 30 1899)
   if (/^\d+$/.test(s)) {
     const serial = parseInt(s);
-    if (serial > 1000) { // likely a serial date
+    if (serial > 1000) {
       const base = new Date(1899, 11, 30);
       base.setDate(base.getDate() + serial);
       return base;
@@ -116,47 +90,39 @@ function parseDate(s) {
   const d = new Date(s);
   return isNaN(d.getTime()) ? null : d;
 }
+
 function formatDate(d){ if(!d||isNaN(d.getTime())) return 'N/A'; return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
 function daysRemaining(d){ if(!d||isNaN(d.getTime())) return -999; const n=new Date(); n.setHours(0,0,0,0); return Math.floor((d-n)/(1000*60*60*24)); }
 function getMembershipStatus(days){ return days<0?'Expired':days<=3?'Warning':'Active'; }
 
-// MEMBER LOOKUP
+// ─── MEMBER LOOKUP ────────────────────────────────────────────
 async function lookupMember(memberId) {
-  const rows=await readSheet(SHEETS.MEMBERS_SHEET);
-  const id=memberId.trim();
-  return rows.find(r=>{
-    // Trim all keys to handle trailing spaces in sheet headers
-    const rid=(r['Membership ID']||r['Membership ID ']||r['MemberID']||r['Member ID']||'').trim();
-    return rid===id;
-  })||null;
+  const rows = await readSheet(SHEETS.MEMBERS_SHEET);
+  const id   = memberId.trim();
+  return rows.find(r => {
+    const rid = (r['Membership ID'] || '').trim();
+    return rid === id;
+  }) || null;
 }
-// Helper to extract member fields — trims all keys to handle trailing spaces
+
+// Extract member fields using EXACT column names from your sheet
 function extractMember(row, fallbackId) {
-  // Normalize row keys by trimming whitespace
-  const r = {};
-  Object.keys(row).forEach(k => { r[k.trim()] = (row[k]||'').trim(); });
-
-  // Debug — log raw values to console so we can see exactly what Sheets sends
-  console.log('[AK Debug] Raw row keys:', Object.keys(r));
-  console.log('[AK Debug] Package Validity raw:', r['Package Validity']);
-  console.log('[AK Debug] Created On raw:', r['Created On']);
-  console.log('[AK Debug] Parsed expiry:', parseDate(r['Package Validity']));
-
   return {
-    memberID:   r['Membership ID']  ||fallbackId,
-    name:       r['Client name']    ||'Unknown',
-    phone:      r['Contact no']     ||'',
-    package:    r['Package Details']||'',
-    startDate:  parseDate(r['Created On']      ||''),
-    expiryDate: parseDate(r['Package Validity']||''),
-    status:     r['Status']         ||''
+    memberID:   (row['Membership ID']  || fallbackId  || '').trim(),
+    name:       (row['Client name']    || 'Unknown'   ).trim(),
+    phone:      (row['Contact no']     || ''          ).trim(),
+    package:    (row['Package Details']|| ''          ).trim(),
+    startDate:  parseDate(row['Created On']       || ''),
+    expiryDate: parseDate(row['Package Validity'] || ''),
+    status:     (row['Status']         || ''          ).trim()
   };
 }
-async function recordAttendance(member,status){
-  await writeRow(SHEETS.ATTENDANCE_SHEET,[today(),nowTime(),member.memberID,member.name,status]);
+
+async function recordAttendance(member, status){
+  await writeRow(SHEETS.ATTENDANCE_SHEET, [today(), nowTime(), member.memberID, member.name, status]);
 }
 
-// PACK MESSAGES
+// ─── PACK MESSAGES ────────────────────────────────────────────
 function getFirstName(n){ return (n||'Pack Member').trim().split(' ')[0]; }
 function getPackMessage(firstName, type) {
   const h=new Date().getHours();
@@ -213,7 +179,7 @@ function getPackMessage(firstName, type) {
   return pool[Math.floor(Math.random()*pool.length)]||'';
 }
 
-// CHECK IN
+// ─── CHECK IN (used by script.js handleCheckIn calls) ─────────
 async function handleCheckIn(memberIdInput) {
   const id=memberIdInput.trim();
   if(!id){showTerminalMessage('Please enter a Member ID.','warning');return;}
@@ -221,10 +187,10 @@ async function handleCheckIn(memberIdInput) {
   try {
     const row=await lookupMember(id);
     if(!row){showLoading(false);showTerminalMessage(`Member ID "${id}" not found. Please check your ID or contact reception.`,'danger');return;}
-    const member = extractMember(row, id);
-    const days=daysRemaining(member.expiryDate);
-    const statusType=getMembershipStatus(days);
-    const statusLabel=statusType==='Warning'?'Active':statusType;
+    const member      = extractMember(row, id);
+    const days        = daysRemaining(member.expiryDate);
+    const statusType  = getMembershipStatus(days);
+    const statusLabel = statusType==='Warning'?'Active':statusType;
     try{await recordAttendance(member,statusLabel);}catch(e){console.warn('Write failed:',e);}
     showLoading(false);
     renderMemberCard(member,days,statusType);
@@ -246,28 +212,23 @@ function renderMemberCard(member,days,statusType){
   const packMsg  =statusType!=='Expired'?getPackMessage(firstName,'checkin'):'';
   const welcomeHtml=statusType!=='Expired'?`<div class="welcome-banner"><div class="welcome-wolf">🐺</div><h2>WELCOME TO THE PACK</h2><p class="pack-msg">${packMsg}</p></div>`:'';
   resultEl.innerHTML=`
-    <div class="member-result">
-      <div class="member-card ${statusClass}">
-        <div class="flex-between mb-16">
-          <div>
-            <div class="member-card-name">${member.name.toUpperCase()}</div>
-            <div class="member-card-id">ID: ${member.memberID}</div>
-          </div>
-          <span class="badge ${badgeClass}">${badgeLabel}</span>
-        </div>
-        <div class="member-info-grid">
-          <div class="member-info-item"><div class="member-info-label">Start Date</div><div class="member-info-value">${formatDate(member.startDate)}</div></div>
-          <div class="member-info-item"><div class="member-info-label">Expiry Date</div><div class="member-info-value">${formatDate(member.expiryDate)}</div></div>
-          <div class="member-info-item"><div class="member-info-label">Days Remaining</div><div class="days-remaining ${daysClass}">${daysDisplay}</div></div>
-          <div class="member-info-item"><div class="member-info-label">Phone</div><div class="member-info-value">${member.phone||'—'}</div></div>
-        </div>
-        ${alertHtml}${welcomeHtml}
+    <div class="member-result"><div class="member-card ${statusClass}">
+      <div class="flex-between mb-16">
+        <div><div class="member-card-name">${member.name.toUpperCase()}</div><div class="member-card-id">ID: ${member.memberID}</div></div>
+        <span class="badge ${badgeClass}">${badgeLabel}</span>
       </div>
-    </div>`;
+      <div class="member-info-grid">
+        <div class="member-info-item"><div class="member-info-label">Start Date</div><div class="member-info-value">${formatDate(member.startDate)}</div></div>
+        <div class="member-info-item"><div class="member-info-label">Expiry Date</div><div class="member-info-value">${formatDate(member.expiryDate)}</div></div>
+        <div class="member-info-item"><div class="member-info-label">Days Remaining</div><div class="days-remaining ${daysClass}">${daysDisplay}</div></div>
+        <div class="member-info-item"><div class="member-info-label">Contact</div><div class="member-info-value">${member.phone||'—'}</div></div>
+      </div>
+      ${alertHtml}${welcomeHtml}
+    </div></div>`;
   resultEl.classList.remove('hidden');
 }
 
-// ADMIN
+// ─── ADMIN ────────────────────────────────────────────────────
 let adminRefreshInterval=null;
 async function loadAdminDashboard(){
   try{
@@ -293,7 +254,7 @@ async function loadAdminDashboard(){
 }
 function startAdminAutoRefresh(s=8){loadAdminDashboard();if(adminRefreshInterval)clearInterval(adminRefreshInterval);adminRefreshInterval=setInterval(loadAdminDashboard,s*1000);}
 
-// HISTORY
+// ─── HISTORY ──────────────────────────────────────────────────
 let allHistoryRows=[];
 async function loadHistory(){
   const tbody=document.getElementById('historyTbody');
@@ -323,7 +284,7 @@ function filterHistory(){
   renderHistoryTable(f);
 }
 
-// UI HELPERS
+// ─── UI HELPERS ───────────────────────────────────────────────
 function showLoading(show){ const el=document.getElementById('loadingSpinner'); if(el)el.classList.toggle('hidden',!show); }
 function clearResult(){
   const el=document.getElementById('memberResult'); const msgEl=document.getElementById('terminalMessage');
@@ -337,7 +298,7 @@ function showTerminalMessage(msg,type='info'){
   el.classList.remove('hidden');
 }
 
-// CONFIG
+// ─── CONFIG ───────────────────────────────────────────────────
 function showConfigOverlay(){
   document.getElementById('configOverlay')?.remove();
   const cfg=getConfig();
@@ -370,7 +331,7 @@ function saveConfigFromOverlay(){
 }
 function requireConfig(){const cfg=getConfig();if(!cfg.spreadsheetId){showConfigOverlay();return false;}return true;}
 
-// FILTER INPUTS
+// ─── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
   ['filterDate','filterID','filterName'].forEach(id=>document.getElementById(id)?.addEventListener('input',filterHistory));
   document.getElementById('settingsBtn')?.addEventListener('click',showConfigOverlay);
